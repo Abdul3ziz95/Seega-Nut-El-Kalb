@@ -1,0 +1,163 @@
+
+:root {
+    /* Artistic/Earthy Palette - لوحة ألوان فنية */
+    --board-color: #795548; /* بني عميق (لون اللوحة الخارجي) */
+    --cell-light: #FFEBCC; /* بيج فاتح (لون المربعات الفاتحة) */
+    --cell-dark: #D7CCC8;  /* وردي رمادي فاتح (لون المربعات الغامقة) */
+    --player1-color: #212121; /* أسود حالك (اللاعب 1) */
+    --player2-color: #B71C1C; /* أحمر داكن (اللاعب 2) */
+    --select-green: #4CAF50; /* الأخضر لتمييز القطعة المختارة */
+    --font-color: #333;
+    --highlight-color: #FFC107; /* لون تمييز إضافي */
+}
+
+body {
+    font-family: 'Times New Roman', serif; /* خط كلاسيكي */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #F8F5F0; /* خلفية ناعمة */
+    margin: 0;
+    padding: 20px;
+    color: var(--font-color);
+    min-height: 100vh;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+h1 {
+    color: var(--board-color);
+    border-bottom: 3px solid var(--select-green);
+    padding-bottom: 5px;
+    font-size: 2em;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.1);
+}
+
+#game-status {
+    font-weight: 700;
+    font-size: 1.4em;
+    margin-top: 10px;
+    color: var(--player1-color);
+}
+
+.board-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); 
+    grid-template-rows: repeat(5, 1fr);
+    width: 90vw; 
+    max-width: 450px;
+    height: 90vw;
+    max-height: 450px;
+    border: 10px solid var(--board-color); /* إطار أسمك */
+    border-radius: 5px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4); /* ظل عميق */
+}
+
+.cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.1s, box-shadow 0.1s;
+}
+
+/* تلوين المربعات الأساسي */
+.cell:nth-child(odd) {
+    background-color: var(--cell-light);
+}
+.cell:nth-child(even) {
+    background-color: var(--cell-dark);
+}
+
+/* تمييز المربع المركزي */
+.cell[data-row="2"][data-col="2"] {
+    background-color: #FFD1D1 !important; 
+    box-shadow: inset 0 0 5px rgba(255, 0, 0, 0.5);
+}
+
+/* 🛑 حركة الوميض (النبض) 🛑 */
+@keyframes pulse-green {
+    0% { border-color: var(--select-green); box-shadow: 0 0 10px var(--select-green), inset 0 0 10px var(--select-green); }
+    50% { border-color: #81C784; box-shadow: 0 0 15px #81C784, inset 0 0 15px #81C784; } 
+    100% { border-color: var(--select-green); box-shadow: 0 0 10px var(--select-green), inset 0 0 10px var(--select-green); }
+}
+
+/* 🟢 تمييز الخلية المختارة بالإطار واللون الأخضر الوامض 🟢 */
+.cell.selected {
+    border: 3px solid var(--select-green); 
+    background-color: rgba(76, 175, 80, 0.4) !important; 
+    animation: pulse-green 0.8s infinite alternate; 
+}
+
+.piece {
+    width: 75%; 
+    height: 75%;
+    border-radius: 50%;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.5); /* ظل أعمق */
+    transition: background-color 0.2s, transform 0.2s;
+    position: relative; 
+    z-index: 2;
+    /* Dog Logo Styling */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5em; /* حجم الشعار */
+    font-family: 'Segoe UI Symbol', sans-serif; /* لضمان ظهور الرمز */
+}
+
+/* 🐾 شعار الكلب (طباعة مخلب ثابتة) 🐾 */
+.piece::before {
+    content: '🐾'; 
+    color: white; 
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5); 
+    transition: color 0.2s, content 0.2s;
+}
+
+/* القواعد الأساسية للقطع */
+.player1 {
+    background-color: var(--player1-color);
+}
+
+.player2 {
+    background-color: var(--player2-color);
+    border: none;
+}
+
+/* 🟢 القاعدة القوية لتغيير لون القطعة نفسها إلى الأخضر 🟢 */
+.cell.selected .piece {
+    background-color: var(--select-green) !important; 
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.8); 
+    border: none !important;
+}
+
+/* 🐕 تغيير الشعار عند التحديد (كلب بدلاً من مخلب) 🐕 */
+.cell.selected .piece::before {
+    content: '🐕'; 
+    color: var(--player1-color); /* لون غامق للشعار على خلفية خضراء */
+}
+
+
+.action-button {
+    margin-top: 25px;
+    padding: 12px 25px;
+    font-size: 1.1em;
+    cursor: pointer;
+    background-color: var(--board-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    transition: background-color 0.3s, transform 0.1s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.action-button:hover {
+    background-color: #5D4037; 
+    transform: translateY(-2px);
+}
+/* ... (Custom alert styles remain unchanged) ... */
+.hidden {
+    display: none !important;
+}
