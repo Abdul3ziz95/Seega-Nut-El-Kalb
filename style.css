@@ -1,3 +1,4 @@
+
 :root {
     /* Artistic/Earthy Palette - لوحة ألوان فنية */
     --board-color: #795548; /* بني عميق (لون اللوحة الخارجي) */
@@ -43,6 +44,7 @@ h1 {
 }
 
 .board-grid {
+    /* ... (خصائص اللوحة لم تتغير) ... */
     display: grid;
     grid-template-columns: repeat(5, 1fr); 
     grid-template-rows: repeat(5, 1fr);
@@ -56,6 +58,7 @@ h1 {
 }
 
 .cell {
+    /* ... (خصائص الخلية لم تتغير) ... */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -67,31 +70,14 @@ h1 {
 .cell:nth-child(odd) { background-color: var(--cell-light); }
 .cell:nth-child(even) { background-color: var(--cell-dark); }
 
-/* تمييز المربع المركزي */
-.cell[data-row="2"][data-col="2"] {
-    background-color: #FFD1D1 !important; 
-    box-shadow: inset 0 0 5px rgba(255, 0, 0, 0.5);
-}
-
-/* 🛑 حركة الوميض (النبض) 🛑 */
-@keyframes pulse-green {
-    0% { border-color: var(--select-green); box-shadow: 0 0 10px var(--select-green), inset 0 0 10px var(--select-green); }
-    50% { border-color: #81C784; box-shadow: 0 0 15px #81C784, inset 0 0 15px #81C784; } 
-    100% { border-color: var(--select-green); box-shadow: 0 0 10px var(--select-green), inset 0 0 10px var(--select-green); }
-}
-
-/* 🟢 تمييز الخلية المختارة بالإطار واللون الأخضر الوامض 🟢 */
-.cell.selected {
-    border: 3px solid var(--select-green); 
-    background-color: rgba(76, 175, 80, 0.4) !important; 
-    animation: pulse-green 0.8s infinite alternate; 
-}
-
 .piece {
     width: 75%; 
     height: 75%;
     border-radius: 50%;
-    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.5); 
+    /* 🛑 الظل الرئيسي يعطي عمقاً ثلاثي الأبعاد 🛑 */
+    box-shadow: 
+        0 8px 15px rgba(0, 0, 0, 0.6), /* الظل الأرضي */
+        inset 0 0 10px rgba(255, 255, 255, 0.5); /* إضاءة علوية */
     transition: background-color 0.2s, transform 0.2s;
     position: relative; 
     z-index: 2;
@@ -114,55 +100,37 @@ h1 {
     transition: color 0.2s, content 0.2s;
 }
 
-/* 🛑 إزالة أنماط الخلفية الأساسية لـ player1 و player2 لتمكين أنماط الحجر 🛑 */
-.player1 { border: none; }
-.player2 { border: none; }
-
-
-/* 🟢 القاعدة القوية لتغيير لون القطعة نفسها إلى الأخضر 🟢 */
-.cell.selected .piece {
-    background-color: var(--select-green) !important; 
-    box-shadow: 0 0 10px rgba(76, 175, 80, 0.8); 
+/* 🛑 إزالة أنماط الخلفية الأساسية من player1 و player2 لتفعيل أنماط الحجر 🛑 */
+.player1 { 
+    /* هذا القسم فارغ الآن */ 
+    border: none !important;
+}
+.player2 { 
+    /* هذا القسم فارغ الآن */ 
     border: none !important;
 }
 
+/* 🟢 تمييز القطعة المختارة (لون أخضر قوي) 🟢 */
+.cell.selected .piece {
+    background-color: var(--select-green) !important; 
+    box-shadow: 0 0 15px rgba(76, 175, 80, 1), 0 0 5px rgba(0,0,0,0.5); 
+    border: none !important;
+    transform: scale(1.05); /* إبراز القطعة المختارة */
+}
 /* 🐕 تغيير الشعار عند التحديد (كلب بدلاً من مخلب) 🐕 */
 .cell.selected .piece::before {
     content: '🐕'; 
-    color: var(--player1-color); 
+    color: white; 
 }
 
 
 /* ---------------------------------- */
 /* 🛑 أنماط شاشة الاختيار 🛑 */
 /* ---------------------------------- */
-#selection-screen {
-    text-align: center;
-    padding: 20px;
-    border: 2px solid var(--board-color);
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
 
-.player-selection {
-    margin: 15px 0;
-    padding: 10px;
-    border-radius: 5px;
-    background-color: #F0F0F0;
-}
-
-.options-container {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 10px;
-    flex-wrap: wrap; /* لضمان الترتيب الجيد على الشاشات الصغيرة */
-}
-
-/* 🛑 نمط زر الاختيار المعدل - يسمح بعرض القطعة فوق النص 🛑 */
 .stone-option {
     display: flex;
-    flex-direction: column; /* لترتيب القطعة فوق النص */
+    flex-direction: column; 
     align-items: center;
     padding: 5px 10px;
     border: 2px solid #ccc;
@@ -172,131 +140,114 @@ h1 {
     height: 90px;
     width: 80px; 
 }
-
 .stone-option span {
     font-size: 0.9em;
     font-weight: 500;
 }
-
 /* 🛑 تصغير حجم القطعة في شاشة الاختيار 🛑 */
 .stone-option .piece {
     width: 40px; 
     height: 40px; 
     margin-bottom: 5px;
-    /* 🛑 هام: تصغير الظل هنا ليكون مختلفاً عن قطعة اللعب 🛑 */
     box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
     border: 1px solid #ccc;
 }
-
-/* 🛑 جعل شعار الكلب أسود في شاشة الاختيار لضمان الرؤية 🛑 */
 .stone-option .piece::before {
     font-size: 1.2em;
     color: #212121; /* لون داكن للشعار في شاشة الاختيار */
     text-shadow: none;
 }
 
-.stone-option.selected {
-    border-color: var(--select-green);
-    background-color: #E8F5E9;
-    box-shadow: 0 0 5px var(--select-green);
-    font-weight: bold;
-}
-
 
 /* ---------------------------------- */
-/* 🛑 الأنماط الخمسة للحجارة (أنماط حجرية واقعية جديدة) 🛑 */
+/* 🛑 أنماط الحجارة الواقعية 🛑 */
 /* ---------------------------------- */
 
-/* 💎 Style A: حجر بازلت (عمق وداكن) */
+/* 💎 Style A: حجر الأوبسيديان (Obsidian) - داكن، لامع، وزجاجي */
 .player1 .stone-A {
-    background: radial-gradient(circle at 30% 30%, #424242, #212121);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.2);
+    background: radial-gradient(circle at 30% 30%, #424242 0%, #212121 80%, #000000 100%);
+    box-shadow: 
+        0 5px 10px rgba(0,0,0,0.8), 
+        inset 0 0 20px rgba(255,255,255,0.3); 
 }
 .player2 .stone-A {
-    background: radial-gradient(circle at 30% 30%, #5D4037, #3E2723);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.2);
+    background: radial-gradient(circle at 30% 30%, #5D4037 0%, #3E2723 80%, #211512 100%);
+    box-shadow: 
+        0 5px 10px rgba(0,0,0,0.8), 
+        inset 0 0 20px rgba(255,255,255,0.3); 
 }
-/* الشعار أبيض للقطع الداكنة */
 .player1 .stone-A::before, .player2 .stone-A::before { color: white; } 
 
 
-/* 🟡 Style B: حجر كهرماني (توهج ولون دافئ) */
+/* 🟡 Style B: حجر الكهرمان (Amber) - توهج دافئ وشفافية */
 .player1 .stone-B {
     background: radial-gradient(circle at 60% 60%, #FFC107, #FF9800);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3), inset 0 0 10px #FFD54F;
+    box-shadow: 
+        0 4px 8px rgba(0,0,0,0.3), 
+        inset 0 0 15px #FFD54F; /* توهج داخلي */
 }
 .player2 .stone-B {
     background: radial-gradient(circle at 60% 60%, #FF7043, #D84315);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3), inset 0 0 10px #FFAB91;
+    box-shadow: 
+        0 4px 8px rgba(0,0,0,0.3), 
+        inset 0 0 15px #FFAB91;
 }
-/* الشعار داكن للقطع الفاتحة */
 .player1 .stone-B::before, .player2 .stone-B::before { color: #212121; } 
 
 
-/* 🟢 Style C: حجر أخضر (لمسة طحلبية) */
+/* 🟢 Style C: حجر اليشم (Jade) - مظهر كريستالي وناعم */
 .player1 .stone-C {
-    background: radial-gradient(circle at 40% 40%, #8BC34A, #4CAF50);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2), inset 0 0 5px #C5E1A5;
+    background: radial-gradient(circle at 40% 40%, #A5D6A7, #4CAF50);
+    box-shadow: 
+        0 3px 5px rgba(0,0,0,0.2), 
+        inset 0 0 10px #C8E6C9, 
+        inset 0 0 1px #FFFFFF;
 }
 .player2 .stone-C {
-    background: radial-gradient(circle at 40% 40%, #009688, #004D40);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2), inset 0 0 5px #4DB6AC;
+    background: radial-gradient(circle at 40% 40%, #80CBC4, #009688);
+    box-shadow: 
+        0 3px 5px rgba(0,0,0,0.2), 
+        inset 0 0 10px #B2DFDB, 
+        inset 0 0 1px #FFFFFF;
 }
-/* الشعار أسود على الأخضر الفاتح وأبيض على الداكن */
-.player1 .stone-C::before { color: #212121; } 
-.player2 .stone-C::before { color: white; } 
+.player1 .stone-C::before, .player2 .stone-C::before { color: #212121; } 
 
 
-/* 🧊 Style D: حجر ثلجي/شفاف (تأثير بارد) */
+/* 🧊 Style D: حجر القمر (Moonstone) - مظهر أزرق رمادي وبارد */
 .player1 .stone-D {
-    background: radial-gradient(circle at 50% 50%, #B0BEC5, #78909C);
-    box-shadow: 0 6px 10px rgba(0,0,0,0.2), inset 0 0 10px #CFD8DC;
+    background: radial-gradient(circle at 50% 50%, #ECEFF1, #90A4AE);
+    box-shadow: 
+        0 6px 10px rgba(0,0,0,0.2), 
+        inset 0 0 20px rgba(255,255,255,0.8);
 }
 .player2 .stone-D {
     background: radial-gradient(circle at 50% 50%, #B3E5FC, #4FC3F7);
-    box-shadow: 0 6px 10px rgba(0,0,0,0.2), inset 0 0 10px #E1F5FE;
+    box-shadow: 
+        0 6px 10px rgba(0,0,0,0.2), 
+        inset 0 0 20px rgba(255,255,255,0.8);
 }
-/* الشعار داكن */
 .player1 .stone-D::before, .player2 .stone-D::before { color: #212121; }
 
 
-/* 🟤 Style E: حجر طيني (مظهر خشن) */
+/* 🟤 Style E: حجر الطين/الغرانيت (Textured Clay) - مظهر خشن ومصمت */
 .player1 .stone-E {
     background: radial-gradient(circle at 40% 40%, #8D6E63, #4E342E);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+    /* إضافة لمسة خشنة */
     border: 2px solid #3E2723;
 }
 .player2 .stone-E {
     background: radial-gradient(circle at 40% 40%, #A1887F, #6D4C41);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+    /* إضافة لمسة خشنة */
     border: 2px solid #5D4037;
 }
-/* الشعار أسود على الخلفية الفاتحة */
 .player1 .stone-E::before { color: white; }
 .player2 .stone-E::before { color: #212121; }
 
 
-.action-button {
-    margin-top: 25px;
-    padding: 12px 25px;
-    font-size: 1.1em;
-    cursor: pointer;
-    background-color: var(--board-color);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    transition: background-color 0.3s, transform 0.1s;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-}
-
-.action-button:hover {
-    background-color: #5D4037; 
-    transform: translateY(-2px);
-}
-
-/* ... (Custom alert styles remain unchanged) ... */
+/* ... (بقية الأنماط) ... */
 
 .hidden {
     display: none !important;
 }
-
