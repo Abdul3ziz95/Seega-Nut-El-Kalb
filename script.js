@@ -1,4 +1,3 @@
-
 // ===================================
 // PWA: تسجيل Service Worker (للتشغيل دون اتصال)
 // ===================================
@@ -38,7 +37,7 @@ const GAME_STATE_KEY = 'nutElKalbGameState'; // 🛑 مفتاح حفظ حالة 
 // متغيرات النط المتتالي
 let canChainJump = false; 
 let chainJumpTimer = null; 
-const CHAIN_JUMP_TIME = 2000; // 2 ثانية
+const CHAIN_JUMP_TIME = 2000; // 2 ثانية - المدة المطلوبة
 
 let board = []; 
 let currentPlayer = 0; 
@@ -198,7 +197,7 @@ function updateStatus() {
     if (isSacrificePhase) {
         statusText += " (مرحلة التضحية)";
     } else if (canChainJump) {
-        statusText += " (دور إضافي - نط متتالي)";
+        statusText += " (دور إضافي - نط متتالي)"; // يظهر أن الدور لا يزال مستمراً
     }
     statusElement.textContent = statusText;
 }
@@ -241,7 +240,7 @@ function canMove(r, c) {
     return false;
 }
 
-// دالة مساعدة: التحقق مما إذا كانت قطعة معينة يمكنها القيام بحركة نط (قتل) فقط
+// 🎯 هذه الدالة تتحقق مما إذا كانت قطعة ما تستطيع النط (القتل) مرة أخرى 🎯
 function canJumpAgain(r, c) {
     const pieceType = board[r][c];
     const opponent = pieceType === PLAYER1_PIECE ? PLAYER2_PIECE : PLAYER1_PIECE;
@@ -292,14 +291,14 @@ function handleCellClick(event) {
 
     const pieceType = board[r][c];
     
-    // Enforcement of Chain Jump 
+    // 🎯 إنفاذ النط المتتالي 🎯
     if (canChainJump) {
         if (selectedPiece && pieceType === 0) {
             // محاولة الحركة - يجب أن تكون نط قاتل لتستمر السلسلة
             tryMove(r, c); 
         } else if (selectedPiece && pieceType === currentPlayer && selectedPiece.r === r && selectedPiece.c === c) {
             // النقر على نفس القطعة مرة أخرى يعني إنهاء الدور (إلغاء التحديد + إنهاء الدور)
-            finishTurn(true); 
+            finishTurn(); // 🛑 تم تعديل finishTurn(true) إلى finishTurn() لضمان انتقال الدور
         }
         return; 
     }
@@ -322,6 +321,7 @@ function handleCellClick(event) {
 
 // وظيفة تحديد القطعة
 function selectPiece(r, c) {
+    // 🎯 مسح المؤقت عند تحديد قطعة جديدة أو إلغاء تحديد القطعة الحالية 🎯
     if (chainJumpTimer) {
         clearTimeout(chainJumpTimer);
         chainJumpTimer = null;
@@ -336,7 +336,7 @@ function selectPiece(r, c) {
     // إذا ضغط على القطعة المختارة نفسها، يتم إلغاء التحديد
     if (selectedPiece && selectedPiece.r === r && selectedPiece.c === c) {
         selectedPiece = null;
-        if (canChainJump) finishTurn(true); 
+        if (canChainJump) finishTurn(); // 🛑 تم تعديل finishTurn(true) إلى finishTurn() لضمان انتقال الدور
     } else {
         // اختر قطعة جديدة
         selectedPiece = { r: r, c: c };
@@ -397,7 +397,8 @@ function tryMove(newR, newC) {
         if (isSingleStep) {
             // حركة خطوة واحدة
             
-            if (canChainJump) {
+            // 🎯 منع الحركة الفردية إذا كان النط المتتالي إجباريًا 🎯
+            if (canChainJump) { 
                 selectPiece(oldR, oldC); 
                 return;
             }
@@ -419,18 +420,19 @@ function tryMove(newR, newC) {
                 const jumpedC = oldC + Math.floor(dC / 2);
                 board[jumpedR][jumpedC] = 0;
                 
-                // منطق النط المتتالي
-                if (canJumpAgain(newR, newC)) {
+                // 🎯 منطق النط المتتالي (إعادة منح الدور) 🎯
+                if (canJumpAgain(newR, newC)) { // التحقق من توفر قتلة أخرى
                     
                     if (chainJumpTimer) clearTimeout(chainJumpTimer);
                     
-                    canChainJump = true; 
-                    selectedPiece = { r: newR, c: newC };
+                    canChainJump = true; // تفعيل الدور الإضافي
+                    selectedPiece = { r: newR, c: newC }; // إبقاء القطعة محددة
                     
                     // بدء مؤقت 2 ثانية
                     chainJumpTimer = setTimeout(() => {
-                        if (canChainJump) { 
-                            finishTurn(true); 
+                        if (canChainJump) { // إذا لم يكن اللاعب قد تحرك بعد
+                            // 🛑 التعديل الرئيسي هنا: عدم تمرير 'true' لضمان تغيير اللاعب
+                            finishTurn(); // 🛑 تم تغيير finishTurn(true) إلى finishTurn()
                         }
                     }, CHAIN_JUMP_TIME); 
                     
@@ -470,15 +472,16 @@ function checkWinCondition() {
         }
     }
 
-    if (opponentPiecesCount === 0) {
-        gameOver = true;
-    }
+    // هنا يتم التحقق من حالة الفوز عندما لا يستطيع اللاعب الحركة (بدلاً من عدد القطع = 0)
+    // ولكي يتم تطبيق قاعدة نط الكلب السودانية بشكل صحيح، نعتمد على حالة الجمود في finishTurn
+    // يمكن هنا إضافة شرط فوز إضافي، لكننا نعتمد على الجمود المطبق في finishTurn
 }
 
 
 // إنهاء الدور وتغيير اللاعب (param: skipPlayerChange - تستخدم للنط المتتالي)
 function finishTurn(skipPlayerChange = false) {
-    checkWinCondition();
+    // 1. تحقق من شرط الفوز قبل تغيير الدور (في حال لم يتم تفعيله بشكل صريح من tryMove)
+    checkWinCondition(); 
     if (gameOver) {
         renderBoard();
         updateStatus();
@@ -486,14 +489,14 @@ function finishTurn(skipPlayerChange = false) {
         return;
     }
     
-    // إيقاف مؤقت النط المتتالي
+    // 2. إيقاف مؤقت النط المتتالي وإعادة الضبط
     if (chainJumpTimer) {
         clearTimeout(chainJumpTimer);
         chainJumpTimer = null;
     }
     canChainJump = false; 
     
-    // إزالة التحديد
+    // 3. إزالة التحديد
     if (selectedPiece) {
         const oldCell = document.querySelector(`[data-row="${selectedPiece.r}"][data-col="${selectedPiece.c}"]`);
         if (oldCell) oldCell.classList.remove('selected');
@@ -501,17 +504,19 @@ function finishTurn(skipPlayerChange = false) {
     selectedPiece = null;
 
     if (!skipPlayerChange) {
-        // تغيير الدور إلى الخصم
+        // 4. تغيير الدور إلى الخصم
         currentPlayer = currentPlayer === PLAYER1_PIECE ? PLAYER2_PIECE : PLAYER1_PIECE;
-        const nextPlayerColor = currentPlayer === PLAYER1_PIECE ? 'الأسود' : 'الأحمر';
 
-        // التحقق من الجمود: إذا كان اللاعب التالي لا يستطيع الحركة، نمرر الدور
+        // 5. التحقق من الجمود: إذا كان اللاعب التالي لا يستطيع الحركة
         if (!canPlayerMove(currentPlayer)) {
-            
+            // نمرر الدور مرة أخرى للاعب الأصلي
             currentPlayer = currentPlayer === PLAYER1_PIECE ? PLAYER2_PIECE : PLAYER1_PIECE;
 
-            // التحقق مرة أخرى: إذا كان اللاعب الأصلي أيضاً لا يستطيع الحركة، تنتهي اللعبة بالتعادل 
+            // 6. التحقق مرة أخرى: إذا كان اللاعب الأصلي أيضاً لا يستطيع الحركة، تنتهي اللعبة بالتعادل 
             if (!canPlayerMove(currentPlayer)) {
+                gameOver = true;
+            } else {
+                // إذا كان اللاعب الأصلي يستطيع الحركة بعد الجمود، فإنه يفوز (قاعدة محددة في نط الكلب)
                 gameOver = true;
             }
         }
@@ -530,3 +535,4 @@ resetButton.addEventListener('click', () => {
 
 // بدء اللعبة عند التحميل (ستحاول التحميل أولاً)
 initializeBoard();
+                                    
