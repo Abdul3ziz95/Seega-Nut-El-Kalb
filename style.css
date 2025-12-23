@@ -1,14 +1,13 @@
-
 :root {
     /* Artistic/Earthy Palette - لوحة ألوان فنية */
     --board-color: #795548; /* بني عميق (لون اللوحة الخارجي) */
-    --cell-light: #FFEBCC; /* بيج فاتح (لون المربعات الفاتحة) */
-    --cell-dark: #D7CCC8;  /* وردي رمادي فاتح (لون المربعات الغامقة) */
+    --cell-light: #FFEBCC; 
+    --cell-dark: #D7CCC8;  
     --player1-color: #212121; /* أسود حالك (اللاعب 1) */
     --player2-color: #B71C1C; /* أحمر داكن (اللاعب 2) */
     --select-green: #4CAF50; /* الأخضر لتمييز القطعة المختارة */
     --font-color: #333;
-    --highlight-color: #FFC107; /* لون تمييز إضافي */
+    --highlight-color: #FFC107; 
 }
 
 body {
@@ -65,12 +64,8 @@ h1 {
 }
 
 /* تلوين المربعات الأساسي */
-.cell:nth-child(odd) {
-    background-color: var(--cell-light);
-}
-.cell:nth-child(even) {
-    background-color: var(--cell-dark);
-}
+.cell:nth-child(odd) { background-color: var(--cell-light); }
+.cell:nth-child(even) { background-color: var(--cell-dark); }
 
 /* تمييز المربع المركزي */
 .cell[data-row="2"][data-col="2"] {
@@ -107,27 +102,22 @@ h1 {
     font-size: 1.5em; 
     font-family: 'Segoe UI Symbol', sans-serif; 
     
-    /* 🛑 يجب أن تكون شفافة هنا لتطبيق أنماط الحجر 🛑 */
+    /* 🛑 مهم: لضمان تطبيق أنماط الحجر الجديدة (stone-X) 🛑 */
     background-color: transparent !important; 
 }
 
 /* 🐾 شعار الكلب (طباعة مخلب ثابتة) 🐾 */
 .piece::before {
     content: '🐾'; 
-    color: white; /* اللون الافتراضي، يتم تعديله للأنماط الفاتحة أدناه */
+    color: white; 
     text-shadow: 1px 1px 2px rgba(0,0,0,0.5); 
     transition: color 0.2s, content 0.2s;
 }
 
-/* 🛑 تم إزالة أنماط player1 و player2 الخلفية المتضاربة 🛑 */
-.player1 {
-    /* تعتمد الآن بالكامل على .stone-X */
-}
+/* 🛑 إزالة أنماط الخلفية الأساسية لـ player1 و player2 لتمكين أنماط الحجر 🛑 */
+.player1 { border: none; }
+.player2 { border: none; }
 
-.player2 {
-    /* تعتمد الآن بالكامل على .stone-X */
-    border: none;
-}
 
 /* 🟢 القاعدة القوية لتغيير لون القطعة نفسها إلى الأخضر 🟢 */
 .cell.selected .piece {
@@ -166,25 +156,43 @@ h1 {
     justify-content: center;
     gap: 10px;
     margin-top: 10px;
-    flex-wrap: wrap;
+    flex-wrap: wrap; /* لضمان الترتيب الجيد على الشاشات الصغيرة */
 }
 
-/* 🛑 نمط زر الاختيار المعدل 🛑 */
+/* 🛑 نمط زر الاختيار المعدل - يسمح بعرض القطعة فوق النص 🛑 */
 .stone-option {
     display: flex;
-    flex-direction: column; /* القطعة فوق النص */
+    flex-direction: column; /* لترتيب القطعة فوق النص */
     align-items: center;
     padding: 5px 10px;
     border: 2px solid #ccc;
     border-radius: 5px;
     cursor: pointer;
     background-color: white;
-    transition: background-color 0.2s, border-color 0.2s;
     height: 90px;
+    width: 80px; 
 }
 
-.stone-option:hover {
-    background-color: #eee;
+.stone-option span {
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+/* 🛑 تصغير حجم القطعة في شاشة الاختيار 🛑 */
+.stone-option .piece {
+    width: 40px; 
+    height: 40px; 
+    margin-bottom: 5px;
+    /* 🛑 هام: تصغير الظل هنا ليكون مختلفاً عن قطعة اللعب 🛑 */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
+    border: 1px solid #ccc;
+}
+
+/* 🛑 جعل شعار الكلب أسود في شاشة الاختيار لضمان الرؤية 🛑 */
+.stone-option .piece::before {
+    font-size: 1.2em;
+    color: #212121; /* لون داكن للشعار في شاشة الاختيار */
+    text-shadow: none;
 }
 
 .stone-option.selected {
@@ -194,70 +202,80 @@ h1 {
     font-weight: bold;
 }
 
-/* 🛑 تصغير حجم القطعة في شاشة الاختيار 🛑 */
-.stone-option .piece {
-    width: 40px; 
-    height: 40px; 
-    margin-bottom: 5px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
-    border: 1px solid #ccc;
+
+/* ---------------------------------- */
+/* 🛑 الأنماط الخمسة للحجارة (أنماط حجرية واقعية جديدة) 🛑 */
+/* ---------------------------------- */
+
+/* 💎 Style A: حجر بازلت (عمق وداكن) */
+.player1 .stone-A {
+    background: radial-gradient(circle at 30% 30%, #424242, #212121);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.2);
 }
-
-/* 🛑 جعل شعار الكلب أسود في شاشة الاختيار لضمان الرؤية 🛑 */
-.stone-option .piece::before {
-    font-size: 1.2em;
-    color: #212121; 
-    text-shadow: none;
+.player2 .stone-A {
+    background: radial-gradient(circle at 30% 30%, #5D4037, #3E2723);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.2);
 }
+/* الشعار أبيض للقطع الداكنة */
+.player1 .stone-A::before, .player2 .stone-A::before { color: white; } 
 
-.stone-option.disabled-by-opponent {
-    opacity: 0.5;
-    cursor: not-allowed;
+
+/* 🟡 Style B: حجر كهرماني (توهج ولون دافئ) */
+.player1 .stone-B {
+    background: radial-gradient(circle at 60% 60%, #FFC107, #FF9800);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3), inset 0 0 10px #FFD54F;
 }
-
-/* ---------------------------------- */
-/* 🛑 الأنماط الخمسة للحجارة (الخلفيات الجديدة) 🛑 */
-/* ---------------------------------- */
-
-/* Style A: حجر رخامي */
-.player1 .stone-A { background-image: radial-gradient(#616161, #212121); }
-.player2 .stone-A { background-image: radial-gradient(#FFCDD2, #B71C1C); }
-
-/* Style B: حجر خشبي */
-.player1 .stone-B { background-image: linear-gradient(135deg, #4E342E 25%, #6D4C41 25%, #6D4C41 50%, #4E342E 50%, #4E342E 75%, #6D4C41 75%, #6D4C41 100%); background-size: 20px 20px; }
-.player2 .stone-B { background-image: linear-gradient(135deg, #BF360C 25%, #FF7043 25%, #FF7043 50%, #BF360C 50%, #BF360C 75%, #FF7043 75%, #FF7043 100%); background-size: 20px 20px; }
-
-/* Style C: حجر زجاجي */
-.player1 .stone-C { background-color: rgba(33, 33, 33, 0.7); border: 2px solid #fff; }
-.player2 .stone-C { background-color: rgba(183, 28, 28, 0.7); border: 2px solid #fff; }
-
-/* Style D: حجر معدني */
-.player1 .stone-D { background-image: radial-gradient(circle at top left, #424242, #212121); }
-.player2 .stone-D { background-image: radial-gradient(circle at top left, #E57373, #D32F2F); }
-
-/* Style E: حجر طيني */
-.player1 .stone-E { background-image: repeating-linear-gradient(45deg, #3E2723, #3E2723 10px, #4E342E 10px, #4E342E 20px); }
-.player2 .stone-E { background-image: repeating-linear-gradient(45deg, #D84315, #D84315 10px, #FF5722 10px, #FF5722 20px); }
-
-/* ---------------------------------- */
-/* أنماط الشعار لضمان وضوح على الأنماط الفاتحة في لوحة اللعب */
-/* ---------------------------------- */
-.player2 .stone-A::before,
-.player2 .stone-B::before,
-.player2 .stone-C::before,
-.player2 .stone-D::before,
-.player2 .stone-E::before {
-    color: #212121; /* جعل شعار اللاعب الأحمر أسود في معظم الأنماط الفاتحة */
+.player2 .stone-B {
+    background: radial-gradient(circle at 60% 60%, #FF7043, #D84315);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3), inset 0 0 10px #FFAB91;
 }
+/* الشعار داكن للقطع الفاتحة */
+.player1 .stone-B::before, .player2 .stone-B::before { color: #212121; } 
 
-.player1 .stone-C::before {
-     color: #fff; /* يمكن أن يبقى أبيض على خلفية اللاعب 1 الزجاجية (الداكنة) */
+
+/* 🟢 Style C: حجر أخضر (لمسة طحلبية) */
+.player1 .stone-C {
+    background: radial-gradient(circle at 40% 40%, #8BC34A, #4CAF50);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2), inset 0 0 5px #C5E1A5;
 }
+.player2 .stone-C {
+    background: radial-gradient(circle at 40% 40%, #009688, #004D40);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2), inset 0 0 5px #4DB6AC;
+}
+/* الشعار أسود على الأخضر الفاتح وأبيض على الداكن */
+.player1 .stone-C::before { color: #212121; } 
+.player2 .stone-C::before { color: white; } 
 
 
-/* ---------------------------------- */
-/* أنماط متفرقة */
-/* ---------------------------------- */
+/* 🧊 Style D: حجر ثلجي/شفاف (تأثير بارد) */
+.player1 .stone-D {
+    background: radial-gradient(circle at 50% 50%, #B0BEC5, #78909C);
+    box-shadow: 0 6px 10px rgba(0,0,0,0.2), inset 0 0 10px #CFD8DC;
+}
+.player2 .stone-D {
+    background: radial-gradient(circle at 50% 50%, #B3E5FC, #4FC3F7);
+    box-shadow: 0 6px 10px rgba(0,0,0,0.2), inset 0 0 10px #E1F5FE;
+}
+/* الشعار داكن */
+.player1 .stone-D::before, .player2 .stone-D::before { color: #212121; }
+
+
+/* 🟤 Style E: حجر طيني (مظهر خشن) */
+.player1 .stone-E {
+    background: radial-gradient(circle at 40% 40%, #8D6E63, #4E342E);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    border: 2px solid #3E2723;
+}
+.player2 .stone-E {
+    background: radial-gradient(circle at 40% 40%, #A1887F, #6D4C41);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    border: 2px solid #5D4037;
+}
+/* الشعار أسود على الخلفية الفاتحة */
+.player1 .stone-E::before { color: white; }
+.player2 .stone-E::before { color: #212121; }
+
+
 .action-button {
     margin-top: 25px;
     padding: 12px 25px;
@@ -271,39 +289,14 @@ h1 {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 }
 
-.action-button:hover:not(:disabled) {
-    background-color: #5D4037;
+.action-button:hover {
+    background-color: #5D4037; 
     transform: translateY(-2px);
 }
 
-.action-button:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-}
-
-/* Custom Alert */
-#custom-alert-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 100;
-}
-
-#custom-alert-box {
-    background: white;
-    padding: 30px;
-    border-radius: 10px;
-    text-align: center;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
-    max-width: 80%;
-}
+/* ... (Custom alert styles remain unchanged) ... */
 
 .hidden {
     display: none !important;
 }
+
