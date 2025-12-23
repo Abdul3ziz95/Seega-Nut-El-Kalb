@@ -22,9 +22,12 @@ if ('serviceWorker' in navigator) {
 const boardElement = document.getElementById('board');
 const statusElement = document.getElementById('game-status');
 const resetButton = document.getElementById('reset-button');
-const selectionScreen = document.getElementById('selection-screen'); // 🛑 New UI element
-const startGameButton = document.getElementById('start-game-button'); // 🛑 New UI element
-// ... (باقي عناصر الـ alert)
+const selectionScreen = document.getElementById('selection-screen'); // 🛑 عنصر شاشة الاختيار
+const startGameButton = document.getElementById('start-game-button'); // 🛑 زر بدء اللعب
+const alertOverlay = document.getElementById('custom-alert-overlay');
+const alertMessage = document.getElementById('alert-message');
+const alertButton = document.getElementById('alert-ok-button');
+
 
 // إعدادات اللعبة
 const BOARD_SIZE = 5; 
@@ -48,11 +51,19 @@ let gameOver = false;
 // 🛑 متغيرات اختيار الحجارة 🛑
 let player1StoneType = null;
 let player2StoneType = null;
-const ALL_STONE_TYPES = ['A', 'B', 'C', 'D', 'E']; // للحفاظ على قائمة الأنماط
+const ALL_STONE_TYPES = ['A', 'B', 'C', 'D', 'E']; 
 
-// ... (دوال showAlert و alertButton - لا تغيير) ...
+// دالة عرض التنبيه المخصص
+function showAlert(message) {
+    alertMessage.textContent = message;
+    alertOverlay.classList.remove('hidden');
+    alertButton.onclick = () => {
+        alertOverlay.classList.add('hidden');
+    };
+}
 
-// 🛑 New: Save game state to localStorage
+
+// 🛑 حفظ حالة اللعبة إلى التخزين المحلي
 function saveGameState() {
     const state = {
         board: board,
@@ -67,7 +78,7 @@ function saveGameState() {
     localStorage.setItem(GAME_STATE_KEY, JSON.stringify(state));
 }
 
-// 🛑 New: Load game state from localStorage
+// 🛑 تحميل حالة اللعبة من التخزين المحلي
 function loadGameState() {
     const savedState = localStorage.getItem(GAME_STATE_KEY);
     if (savedState) {
@@ -92,8 +103,10 @@ function loadGameState() {
 
 // 1. تهيئة اللوحة (تم تعديلها لتشمل شاشة الاختيار)
 function initializeBoard() {
-    if (loadGameState() && board.length > 0) {
-        // إذا تم تحميل حالة اللعبة، نبدأ مباشرة
+    const loaded = loadGameState();
+    
+    // 1. إذا كانت حالة اللعبة موجودة وتم اختيار الأنماط، ابدأ اللعبة مباشرة
+    if (loaded && board.length > 0 && player1StoneType && player2StoneType) {
         selectionScreen.classList.add('hidden');
         boardElement.classList.remove('hidden');
         renderBoard();
@@ -101,18 +114,17 @@ function initializeBoard() {
         return; 
     }
     
-    // 🛑 إذا لم تكن هناك لعبة محفوظة أو إذا لم يتم اختيار الأنماط بعد
+    // 2. إذا لم يتم اختيار الأنماط (لعبة جديدة أو إعادة تعيين)، اعرض شاشة الاختيار
     if (!player1StoneType || !player2StoneType) {
         setupSelectionScreen();
         return;
     }
 
     // ------------------------------------
-    // بدء لعبة جديدة 
+    // 3. بدء لعبة جديدة (تصل هنا فقط إذا كانت الأنماط مختارة ولكن لا يوجد حالة لعب سابقة)
     // ------------------------------------
     board = Array(BOARD_SIZE).fill(0).map(() => Array(BOARD_SIZE).fill(0)); 
     
-    // ... (منطق وضع القطع الأصلي) ...
     let redPieces = [
         [0,0], [0,1], [0,2], [0,3], [0,4], 
         [1,0], [1,1], [1,2], [1,3], [1,4], 
@@ -158,9 +170,12 @@ function setupSelectionScreen() {
     
     const options = document.querySelectorAll('.stone-option');
     options.forEach(option => {
+        // إزالة المستمعين القدامى لمنع تكرار الأحداث
+        option.removeEventListener('click', handleStoneSelection); 
         option.addEventListener('click', handleStoneSelection);
     });
 
+    startGameButton.removeEventListener('click', initializeBoard);
     startGameButton.addEventListener('click', () => {
         if (player1StoneType && player2StoneType) {
             initializeBoard(); // ابدأ اللعبة الآن
@@ -185,27 +200,24 @@ function handleStoneSelection(event) {
         currentChoice = player2StoneType;
     }
     
-    // إذا كانت هذه القطعة مختارة بالفعل، قم بإلغاء اختيارها (إذا لم تكن محجوزة للخصم)
     if (currentChoice === type) {
-        // لا يمكن إلغاء الاختيار إذا كان الخصم قد اختار نفس الحجر
         if (isPlayer1 && player2StoneType !== type) {
              player1StoneType = null;
         } else if (!isPlayer1 && player1StoneType !== type) {
              player2StoneType = null;
         }
     } else {
-        // تحقق من التوفر: لا يمكن للاعب أن يختار حجراً اختاره الخصم
         if (isPlayer1) {
             if (player2StoneType !== type) {
                 player1StoneType = type;
             } else {
-                alert('اللاعب الأحمر اختار هذا النوع بالفعل!');
+                showAlert('اللاعب الأحمر اختار هذا النوع بالفعل!');
             }
         } else {
             if (player1StoneType !== type) {
                 player2StoneType = type;
             } else {
-                alert('اللاعب الأسود اختار هذا النوع بالفعل!');
+                showAlert('اللاعب الأسود اختار هذا النوع بالفعل!');
             }
         }
     }
@@ -264,16 +276,17 @@ function renderBoard() {
     for (let r = 0; r < BOARD_SIZE; r++) {
         for (let c = 0; c < BOARD_SIZE; c++) {
             const cell = document.createElement('div');
-            // ... (باقي خصائص الخلية) ...
             
+            // ... (منطق تلوين الخلية) ...
+            if ((r + c) % 2 === 0) {
+                 cell.classList.add('cell', 'cell-even');
+            } else {
+                 cell.classList.add('cell', 'cell-odd');
+            }
+
             cell.dataset.row = r;
             cell.dataset.col = c;
             cell.addEventListener('click', handleCellClick);
-
-            // تمييز المربع المركزي
-            if (r === CENTER_R && c === CENTER_C) {
-                cell.style.backgroundColor = '#FFD1D1'; 
-            }
 
             const pieceType = board[r][c];
             if (pieceType !== 0) {
@@ -282,10 +295,10 @@ function renderBoard() {
                 let stoneClass;
                 if (pieceType === PLAYER1_PIECE) {
                     piece.classList.add('player1');
-                    stoneClass = `stone-${player1StoneType}`; // 🛑 تطبيق نمط الحجر 🛑
+                    stoneClass = `stone-${player1StoneType}`; 
                 } else {
                     piece.classList.add('player2');
-                    stoneClass = `stone-${player2StoneType}`; // 🛑 تطبيق نمط الحجر 🛑
+                    stoneClass = `stone-${player2StoneType}`; 
                 }
                 
                 piece.classList.add('piece', stoneClass); // إضافة كلاس النمط
@@ -303,7 +316,43 @@ function renderBoard() {
     boardElement.style.gridTemplateColumns = `repeat(${BOARD_SIZE}, 1fr)`;
     boardElement.style.gridTemplateRows = `repeat(${BOARD_SIZE}, 1fr)`;
 }
-// ... (بقية دوال اللعبة: updateStatus, canMove, canJumpAgain, finishTurn, إلخ. - دون تغيير)
+
+
+// دالة تحديث حالة اللعبة (من قام بالتضحية، دور من؟)
+function updateStatus() {
+    let status = '';
+    const playerColor = currentPlayer === PLAYER1_PIECE ? 'الأسود' : 'الأحمر';
+    const playerStyle = currentPlayer === PLAYER1_PIECE ? 'player1-status' : 'player2-status';
+
+    if (gameOver) {
+        const winner = currentPlayer === PLAYER1_PIECE ? 'الأحمر' : 'الأسود';
+        status = `انتهت اللعبة! الفائز هو اللاعب ${winner}.`;
+    } else if (isSacrificePhase) {
+        status = `الدور على اللاعب ${playerColor}. اختر قطعة لتضحي بها.`;
+    } else {
+        status = `الدور على اللاعب <span class="${playerStyle}">${playerColor}</span>. اختر قطعة للتحرك أو النط.`;
+        if (canChainJump) {
+            status += ' ⚠️ نط متتالي إضافي (خلال ثانيتين).';
+        }
+    }
+    statusElement.innerHTML = status;
+}
+
+// ... (بقية دوال اللعبة: canMove, canJumpAgain, getPossibleJumps, getPieceCount, checkWin, handleCellClick) ...
+// بما أنك لم تطلب تعديلها، لن أدرجها، لكن تأكد من وجودها في ملف script.js لديك.
+
+
+// دالة إنهاء الدور (لتبديل اللاعب)
+function finishTurn(skipPlayerChange = false) {
+    // ... (هنا باقي منطق الدالة كما هو في ملفك) ...
+}
+
+// دالة التحقق من إمكانية تحرك اللاعب (لمنع الجمود)
+function canPlayerMove(player) {
+    // ... (هنا باقي منطق الدالة كما هو في ملفك) ...
+    return true; 
+}
+
 
 // 🛑 مسح حالة الحفظ وبدء لعبة جديدة
 resetButton.addEventListener('click', () => {
@@ -315,6 +364,6 @@ resetButton.addEventListener('click', () => {
 });
 
 
-// بدء اللعبة عند التحميل (ستحاول التحميل أولاً)
+// بدء اللعبة عند التحميل
 initializeBoard();
 
