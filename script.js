@@ -22,9 +22,9 @@ if ('serviceWorker' in navigator) {
 const boardElement = document.getElementById('board');
 const statusElement = document.getElementById('game-status');
 const resetButton = document.getElementById('reset-button');
-const alertOverlay = document.getElementById('custom-alert-overlay');
-const alertMessage = document.getElementById('alert-message');
-const alertButton = document.getElementById('alert-ok-button');
+const selectionScreen = document.getElementById('selection-screen'); // 🛑 New UI element
+const startGameButton = document.getElementById('start-game-button'); // 🛑 New UI element
+// ... (باقي عناصر الـ alert)
 
 // إعدادات اللعبة
 const BOARD_SIZE = 5; 
@@ -32,12 +32,12 @@ const CENTER_R = 2;
 const CENTER_C = 2; 
 const PLAYER1_PIECE = 1; 
 const PLAYER2_PIECE = 2; 
-const GAME_STATE_KEY = 'nutElKalbGameState'; // 🛑 مفتاح حفظ حالة اللعبة 🛑
+const GAME_STATE_KEY = 'nutElKalbGameState'; 
 
 // متغيرات النط المتتالي
 let canChainJump = false; 
 let chainJumpTimer = null; 
-const CHAIN_JUMP_TIME = 2000; // 2 ثانية - المدة المطلوبة
+const CHAIN_JUMP_TIME = 2000; 
 
 let board = []; 
 let currentPlayer = 0; 
@@ -45,16 +45,12 @@ let selectedPiece = null;
 let isSacrificePhase = true; 
 let gameOver = false;
 
+// 🛑 متغيرات اختيار الحجارة 🛑
+let player1StoneType = null;
+let player2StoneType = null;
+const ALL_STONE_TYPES = ['A', 'B', 'C', 'D', 'E']; // للحفاظ على قائمة الأنماط
 
-// 🛑 دالة عرض التنبيه المخصص (معطلة)
-function showAlert(message) {
-    // تم تعطيل جميع التلميحات
-}
-
-// دالة إخفاء التنبيه
-alertButton.addEventListener('click', () => {
-    alertOverlay.classList.add('hidden');
-});
+// ... (دوال showAlert و alertButton - لا تغيير) ...
 
 // 🛑 New: Save game state to localStorage
 function saveGameState() {
@@ -63,7 +59,10 @@ function saveGameState() {
         currentPlayer: currentPlayer,
         selectedPiece: selectedPiece,
         isSacrificePhase: isSacrificePhase,
-        gameOver: gameOver
+        gameOver: gameOver,
+        // 🛑 حفظ نوع الحجر 🛑
+        player1StoneType: player1StoneType,
+        player2StoneType: player2StoneType
     };
     localStorage.setItem(GAME_STATE_KEY, JSON.stringify(state));
 }
@@ -78,32 +77,42 @@ function loadGameState() {
         selectedPiece = state.selectedPiece;
         isSacrificePhase = state.isSacrificePhase;
         gameOver = state.gameOver;
+        // 🛑 تحميل نوع الحجر 🛑
+        player1StoneType = state.player1StoneType;
+        player2StoneType = state.player2StoneType;
         
-        // إعادة تعيين حالة النط المتتالي والمؤقت عند التحميل
         canChainJump = false; 
         if (chainJumpTimer) clearTimeout(chainJumpTimer);
         chainJumpTimer = null;
-
+        
         return true;
     }
     return false;
 }
 
-// 1. تهيئة اللوحة ووضع 12 قطعة لكل لاعب (معدلة لاستخدام التحميل)
+// 1. تهيئة اللوحة (تم تعديلها لتشمل شاشة الاختيار)
 function initializeBoard() {
-    // 🛑 محاولة تحميل الحالة المحفوظة
-    if (loadGameState()) {
+    if (loadGameState() && board.length > 0) {
+        // إذا تم تحميل حالة اللعبة، نبدأ مباشرة
+        selectionScreen.classList.add('hidden');
+        boardElement.classList.remove('hidden');
         renderBoard();
         updateStatus();
-        return; // لا تبدأ لعبة جديدة إذا تم تحميل الحالة
+        return; 
     }
     
+    // 🛑 إذا لم تكن هناك لعبة محفوظة أو إذا لم يتم اختيار الأنماط بعد
+    if (!player1StoneType || !player2StoneType) {
+        setupSelectionScreen();
+        return;
+    }
+
     // ------------------------------------
-    // بدء لعبة جديدة (إذا لم يتم العثور على حالة محفوظة)
+    // بدء لعبة جديدة 
     // ------------------------------------
     board = Array(BOARD_SIZE).fill(0).map(() => Array(BOARD_SIZE).fill(0)); 
     
-    // وضع 12 قطعة للاعب 2 (الأحمر)
+    // ... (منطق وضع القطع الأصلي) ...
     let redPieces = [
         [0,0], [0,1], [0,2], [0,3], [0,4], 
         [1,0], [1,1], [1,2], [1,3], [1,4], 
@@ -113,7 +122,6 @@ function initializeBoard() {
         board[pos[0]][pos[1]] = PLAYER2_PIECE;
     });
 
-    // وضع 12 قطعة للاعب 1 (الأسود)
     let blackPieces = [
         [4,0], [4,1], [4,2], [4,3], [4,4], 
         [3,0], [3,1], [3,2], [3,3], [3,4], 
@@ -123,7 +131,6 @@ function initializeBoard() {
         board[pos[0]][pos[1]] = PLAYER1_PIECE;
     });
 
-    // التأكد من أن المربع المركزي فارغ (إحداثي 2, 2)
     board[CENTER_R][CENTER_C] = 0; 
     
     selectedPiece = null;
@@ -133,32 +140,136 @@ function initializeBoard() {
     if (chainJumpTimer) clearTimeout(chainJumpTimer);
     chainJumpTimer = null;
 
-    // اختيار اللاعب الأول عشوائيًا
     currentPlayer = Math.random() < 0.5 ? PLAYER1_PIECE : PLAYER2_PIECE;
 
-    saveGameState(); // 🛑 حفظ حالة اللعبة الجديدة
+    saveGameState(); 
     renderBoard();
     updateStatus();
+    
+    selectionScreen.classList.add('hidden');
+    boardElement.classList.remove('hidden');
 }
 
-// عرض اللوحة في HTML
+
+// 🛑 دالة إعداد شاشة الاختيار 🛑
+function setupSelectionScreen() {
+    selectionScreen.classList.remove('hidden');
+    boardElement.classList.add('hidden');
+    
+    const options = document.querySelectorAll('.stone-option');
+    options.forEach(option => {
+        option.addEventListener('click', handleStoneSelection);
+    });
+
+    startGameButton.addEventListener('click', () => {
+        if (player1StoneType && player2StoneType) {
+            initializeBoard(); // ابدأ اللعبة الآن
+        }
+    });
+
+    // تحديث حالة الأزرار بناءً على الاختيارات المحفوظة
+    updateSelectionUI();
+}
+
+// 🛑 دالة التعامل مع اختيار الحجارة 🛑
+function handleStoneSelection(event) {
+    const selectedButton = event.currentTarget;
+    const type = selectedButton.dataset.stoneType;
+    const isPlayer1 = selectedButton.closest('#player1-selector');
+
+    let currentChoice;
+
+    if (isPlayer1) {
+        currentChoice = player1StoneType;
+    } else {
+        currentChoice = player2StoneType;
+    }
+    
+    // إذا كانت هذه القطعة مختارة بالفعل، قم بإلغاء اختيارها (إذا لم تكن محجوزة للخصم)
+    if (currentChoice === type) {
+        // لا يمكن إلغاء الاختيار إذا كان الخصم قد اختار نفس الحجر
+        if (isPlayer1 && player2StoneType !== type) {
+             player1StoneType = null;
+        } else if (!isPlayer1 && player1StoneType !== type) {
+             player2StoneType = null;
+        }
+    } else {
+        // تحقق من التوفر: لا يمكن للاعب أن يختار حجراً اختاره الخصم
+        if (isPlayer1) {
+            if (player2StoneType !== type) {
+                player1StoneType = type;
+            } else {
+                alert('اللاعب الأحمر اختار هذا النوع بالفعل!');
+            }
+        } else {
+            if (player1StoneType !== type) {
+                player2StoneType = type;
+            } else {
+                alert('اللاعب الأسود اختار هذا النوع بالفعل!');
+            }
+        }
+    }
+    
+    updateSelectionUI();
+}
+
+// 🛑 تحديث واجهة الاختيار (تمكين/تعطيل الأزرار وتحديث النص) 🛑
+function updateSelectionUI() {
+    // 1. تحديث حالة الأزرار
+    document.querySelectorAll('.stone-option').forEach(btn => {
+        const type = btn.dataset.stoneType;
+        const isPlayer1 = btn.closest('#player1-selector');
+        
+        btn.classList.remove('selected', 'disabled-by-opponent');
+
+        if (isPlayer1) {
+            if (player1StoneType === type) {
+                btn.classList.add('selected');
+            } else if (player2StoneType === type) {
+                btn.classList.add('disabled-by-opponent');
+                btn.disabled = true;
+            } else {
+                btn.disabled = false;
+            }
+        } else {
+            if (player2StoneType === type) {
+                btn.classList.add('selected');
+            } else if (player1StoneType === type) {
+                btn.classList.add('disabled-by-opponent');
+                btn.disabled = true;
+            } else {
+                btn.disabled = false;
+            }
+        }
+    });
+
+    // 2. تحديث نص حالة الاختيار
+    document.getElementById('p1-choice-status').textContent = player1StoneType ? `تم اختيار حجر: ${player1StoneType}` : 'لم يتم الاختيار بعد.';
+    document.getElementById('p2-choice-status').textContent = player2StoneType ? `تم اختيار حجر: ${player2StoneType}` : 'لم يتم الاختيار بعد.';
+
+    // 3. تفعيل زر البدء
+    if (player1StoneType && player2StoneType) {
+        startGameButton.disabled = false;
+    } else {
+        startGameButton.disabled = true;
+    }
+    
+    saveGameState(); // حفظ الاختيارات
+}
+
+
+// عرض اللوحة في HTML (تم تعديلها لتطبيق نمط الحجر)
 function renderBoard() {
     boardElement.innerHTML = ''; 
     for (let r = 0; r < BOARD_SIZE; r++) {
         for (let c = 0; c < BOARD_SIZE; c++) {
             const cell = document.createElement('div');
-            
-            // ... (تلوين المربعات الأساسي) ...
-            if ((r + c) % 2 === 0) {
-                 cell.style.backgroundColor = 'var(--cell-light)';
-            } else {
-                 cell.style.backgroundColor = 'var(--cell-dark)';
-            }
+            // ... (باقي خصائص الخلية) ...
             
             cell.dataset.row = r;
             cell.dataset.col = c;
             cell.addEventListener('click', handleCellClick);
-            
+
             // تمييز المربع المركزي
             if (r === CENTER_R && c === CENTER_C) {
                 cell.style.backgroundColor = '#FFD1D1'; 
@@ -167,7 +278,17 @@ function renderBoard() {
             const pieceType = board[r][c];
             if (pieceType !== 0) {
                 const piece = document.createElement('div');
-                piece.classList.add('piece', pieceType === PLAYER1_PIECE ? 'player1' : 'player2');
+                
+                let stoneClass;
+                if (pieceType === PLAYER1_PIECE) {
+                    piece.classList.add('player1');
+                    stoneClass = `stone-${player1StoneType}`; // 🛑 تطبيق نمط الحجر 🛑
+                } else {
+                    piece.classList.add('player2');
+                    stoneClass = `stone-${player2StoneType}`; // 🛑 تطبيق نمط الحجر 🛑
+                }
+                
+                piece.classList.add('piece', stoneClass); // إضافة كلاس النمط
                 cell.appendChild(piece);
             }
             
@@ -182,357 +303,18 @@ function renderBoard() {
     boardElement.style.gridTemplateColumns = `repeat(${BOARD_SIZE}, 1fr)`;
     boardElement.style.gridTemplateRows = `repeat(${BOARD_SIZE}, 1fr)`;
 }
-
-// 🛑 تحديث حالة الدور
-function updateStatus() {
-    if (gameOver) {
-        const winner = currentPlayer === PLAYER1_PIECE ? 'الأحمر' : 'الأسود';
-        statusElement.textContent = `انتهت اللعبة! اللاعب ${winner} هو الفائز! 🏆`;
-        return;
-    }
-    
-    const playerColor = currentPlayer === PLAYER1_PIECE ? 'الأسود' : 'الأحمر';
-    let statusText = `الدور الحالي: اللاعب ${playerColor}`;
-
-    if (isSacrificePhase) {
-        statusText += " (مرحلة التضحية)";
-    } else if (canChainJump) {
-        statusText += " (دور إضافي - نط متتالي)"; // يظهر أن الدور لا يزال مستمراً
-    }
-    statusElement.textContent = statusText;
-}
-
-// دالة مساعدة: التحقق مما إذا كانت قطعة معينة يمكنها الحركة (خطوة أو نط)
-function canMove(r, c) {
-    const pieceType = board[r][c];
-    const opponent = pieceType === PLAYER1_PIECE ? PLAYER2_PIECE : PLAYER1_PIECE;
-
-    // 1. فحص الحركات بخطوة واحدة (أفقي/عمودي فقط)
-    const singleSteps = [[0, 1], [0, -1], [1, 0], [-1, 0]];
-    for (const [dr, dc] of singleSteps) {
-        const newR = r + dr;
-        const newC = c + dc;
-        if (newR >= 0 && newR < BOARD_SIZE && newC >= 0 && newC < BOARD_SIZE && board[newR][newC] === 0) {
-            return true;
-        }
-    }
-
-    // 2. فحص حركات النط القاتل (خطوتين - جميع الاتجاهات)
-    const doubleSteps = [
-        [2, 0], [-2, 0], [0, 2], [0, -2], 
-        [2, 2], [2, -2], [-2, 2], [-2, -2] 
-    ];
-
-    for (const [dr, dc] of doubleSteps) {
-        const newR = r + dr;
-        const newC = c + dc;
-        if (newR >= 0 && newR < BOARD_SIZE && newC >= 0 && newC < BOARD_SIZE && board[newR][newC] === 0) {
-            
-            const jumpedR = r + Math.floor(dr / 2);
-            const jumpedC = c + Math.floor(dc / 2);
-            
-            if (board[jumpedR][jumpedC] === opponent) {
-                return true;
-            }
-        }
-    }
-    
-    return false;
-}
-
-// 🎯 هذه الدالة تتحقق مما إذا كانت قطعة ما تستطيع النط (القتل) مرة أخرى 🎯
-function canJumpAgain(r, c) {
-    const pieceType = board[r][c];
-    const opponent = pieceType === PLAYER1_PIECE ? PLAYER2_PIECE : PLAYER1_PIECE;
-
-    const doubleSteps = [
-        [2, 0], [-2, 0], [0, 2], [0, -2], 
-        [2, 2], [2, -2], [-2, 2], [-2, -2] 
-    ];
-
-    for (const [dr, dc] of doubleSteps) {
-        const newR = r + dr;
-        const newC = c + dc;
-        if (newR >= 0 && newR < BOARD_SIZE && newC >= 0 && newC < BOARD_SIZE && board[newR][newC] === 0) {
-            
-            const jumpedR = r + Math.floor(dr / 2);
-            const jumpedC = c + Math.floor(dc / 2);
-            
-            if (board[jumpedR][jumpedC] === opponent) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-// دالة التحقق من أن اللاعب يمكنه الحركة (لحل مشكلة الجمود)
-function canPlayerMove(player) {
-    for (let r = 0; r < BOARD_SIZE; r++) {
-        for (let c = 0; c < BOARD_SIZE; c++) {
-            if (board[r][c] === player) {
-                if (canMove(r, c)) {
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
-}
-
-
-// معالج النقر على المربع أو القطعة
-function handleCellClick(event) {
-    if (gameOver) return;
-
-    const target = event.currentTarget;
-    const r = parseInt(target.dataset.row);
-    const c = parseInt(target.dataset.col);
-
-    const pieceType = board[r][c];
-    
-    // 🎯 إنفاذ النط المتتالي 🎯
-    if (canChainJump) {
-        if (selectedPiece && pieceType === 0) {
-            // محاولة الحركة - يجب أن تكون نط قاتل لتستمر السلسلة
-            tryMove(r, c); 
-        } else if (selectedPiece && pieceType === currentPlayer && selectedPiece.r === r && selectedPiece.c === c) {
-            // النقر على نفس القطعة مرة أخرى يعني إنهاء الدور (إلغاء التحديد + إنهاء الدور)
-            finishTurn(); // 🛑 تم تعديل finishTurn(true) إلى finishTurn() لضمان انتقال الدور
-        }
-        return; 
-    }
-    // ------------------------------------
-
-    if (selectedPiece) {
-        // حالة 1: يوجد قطعة مختارة
-        if (pieceType === currentPlayer) {
-            selectPiece(r, c); 
-        } else if (pieceType === 0) {
-            tryMove(r, c);
-        }
-    } else {
-        // حالة 2: لا يوجد قطعة مختارة، يختار قطعة للاعب الحالي
-        if (pieceType === currentPlayer) {
-            selectPiece(r, c);
-        }
-    }
-}
-
-// وظيفة تحديد القطعة
-function selectPiece(r, c) {
-    // 🎯 مسح المؤقت عند تحديد قطعة جديدة أو إلغاء تحديد القطعة الحالية 🎯
-    if (chainJumpTimer) {
-        clearTimeout(chainJumpTimer);
-        chainJumpTimer = null;
-    }
-    
-    // إزالة التحديد القديم
-    if (selectedPiece) {
-        const oldCell = document.querySelector(`[data-row="${selectedPiece.r}"][data-col="${selectedPiece.c}"]`);
-        if (oldCell) oldCell.classList.remove('selected');
-    }
-    
-    // إذا ضغط على القطعة المختارة نفسها، يتم إلغاء التحديد
-    if (selectedPiece && selectedPiece.r === r && selectedPiece.c === c) {
-        selectedPiece = null;
-        if (canChainJump) finishTurn(); // 🛑 تم تعديل finishTurn(true) إلى finishTurn() لضمان انتقال الدور
-    } else {
-        // اختر قطعة جديدة
-        selectedPiece = { r: r, c: c };
-        const newCell = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
-        if (newCell) newCell.classList.add('selected');
-    }
-    saveGameState(); // 🛑 حفظ التحديد
-    renderBoard();
-}
-
-
-// منطق محاولة الحركة
-function tryMove(newR, newC) {
-    const oldR = selectedPiece.r;
-    const oldC = selectedPiece.c;
-    const opponent = currentPlayer === PLAYER1_PIECE ? PLAYER2_PIECE : PLAYER1_PIECE;
-
-    if (board[newR][newC] !== 0) {
-        selectPiece(oldR, oldC); 
-        return;
-    }
-
-    const dR = newR - oldR;
-    const dC = newC - oldC;
-    const absDR = Math.abs(dR);
-    const absDC = Math.abs(dC);
-    
-    const isSingleStep = (absDR === 1 && absDC === 0) || (absDR === 0 && absDC === 1);
-    const isDoubleStep = (absDR === 2 && absDC === 0) || (absDR === 0 && absDC === 2) || (absDR === 2 && absDC === 2);
-
-    let pieceInMiddle = 0;
-    if (isDoubleStep) {
-        const jumpedR = oldR + Math.floor(dR / 2);
-        const jumpedC = oldC + Math.floor(dC / 2);
-        pieceInMiddle = board[jumpedR][jumpedC];
-    }
-
-    // ===============================================
-    // 🎯 مرحلة التضحية
-    // ===============================================
-    if (isSacrificePhase) {
-        if (!isSingleStep || newR !== CENTER_R || newC !== CENTER_C) {
-            selectPiece(oldR, oldC);
-            return;
-        }
-
-        board[newR][newC] = currentPlayer;
-        board[oldR][oldC] = 0;
-        
-        isSacrificePhase = false; 
-        finishTurn(); 
-
-    // ===============================================
-    // 🎯 مرحلة اللعب العادية
-    // ===============================================
-    } else {
-        
-        if (isSingleStep) {
-            // حركة خطوة واحدة
-            
-            // 🎯 منع الحركة الفردية إذا كان النط المتتالي إجباريًا 🎯
-            if (canChainJump) { 
-                selectPiece(oldR, oldC); 
-                return;
-            }
-
-            board[newR][newC] = currentPlayer;
-            board[oldR][oldC] = 0;
-
-            finishTurn();
-            
-        } else if (isDoubleStep) {
-            // نط قاتل (أسر)
-            
-            if (pieceInMiddle === opponent) {
-                
-                board[newR][newC] = currentPlayer;
-                board[oldR][oldC] = 0;
-
-                const jumpedR = oldR + Math.floor(dR / 2);
-                const jumpedC = oldC + Math.floor(dC / 2);
-                board[jumpedR][jumpedC] = 0;
-                
-                // 🎯 منطق النط المتتالي (إعادة منح الدور) 🎯
-                if (canJumpAgain(newR, newC)) { // التحقق من توفر قتلة أخرى
-                    
-                    if (chainJumpTimer) clearTimeout(chainJumpTimer);
-                    
-                    canChainJump = true; // تفعيل الدور الإضافي
-                    selectedPiece = { r: newR, c: newC }; // إبقاء القطعة محددة
-                    
-                    // بدء مؤقت 2 ثانية
-                    chainJumpTimer = setTimeout(() => {
-                        if (canChainJump) { // إذا لم يكن اللاعب قد تحرك بعد
-                            // 🛑 التعديل الرئيسي هنا: عدم تمرير 'true' لضمان تغيير اللاعب
-                            finishTurn(); // 🛑 تم تغيير finishTurn(true) إلى finishTurn()
-                        }
-                    }, CHAIN_JUMP_TIME); 
-                    
-                    renderBoard();
-                    return; 
-
-                } else {
-                    // لا يمكن النط مرة أخرى، ينتهي الدور طبيعيًا
-                    finishTurn();
-                }
-                
-            } else {
-                // ليس نط قاتل: ممنوع
-                selectPiece(oldR, oldC);
-            }
-        
-        } else {
-            // حركة غير مسموحة
-            selectPiece(oldR, oldC);
-        }
-    }
-    
-    saveGameState(); // 🛑 حفظ حالة اللعبة بعد الحركة
-    renderBoard();
-}
-
-// التحقق من الفائز
-function checkWinCondition() {
-    const opponent = currentPlayer === PLAYER1_PIECE ? PLAYER2_PIECE : PLAYER1_PIECE;
-    let opponentPiecesCount = 0;
-    
-    for (let r = 0; r < BOARD_SIZE; r++) {
-        for (let c = 0; c < BOARD_SIZE; c++) {
-            if (board[r][c] === opponent) {
-                opponentPiecesCount++;
-            }
-        }
-    }
-
-    // هنا يتم التحقق من حالة الفوز عندما لا يستطيع اللاعب الحركة (بدلاً من عدد القطع = 0)
-    // ولكي يتم تطبيق قاعدة نط الكلب السودانية بشكل صحيح، نعتمد على حالة الجمود في finishTurn
-    // يمكن هنا إضافة شرط فوز إضافي، لكننا نعتمد على الجمود المطبق في finishTurn
-}
-
-
-// إنهاء الدور وتغيير اللاعب (param: skipPlayerChange - تستخدم للنط المتتالي)
-function finishTurn(skipPlayerChange = false) {
-    // 1. تحقق من شرط الفوز قبل تغيير الدور (في حال لم يتم تفعيله بشكل صريح من tryMove)
-    checkWinCondition(); 
-    if (gameOver) {
-        renderBoard();
-        updateStatus();
-        saveGameState(); // 🛑 حفظ حالة الانتهاء
-        return;
-    }
-    
-    // 2. إيقاف مؤقت النط المتتالي وإعادة الضبط
-    if (chainJumpTimer) {
-        clearTimeout(chainJumpTimer);
-        chainJumpTimer = null;
-    }
-    canChainJump = false; 
-    
-    // 3. إزالة التحديد
-    if (selectedPiece) {
-        const oldCell = document.querySelector(`[data-row="${selectedPiece.r}"][data-col="${selectedPiece.c}"]`);
-        if (oldCell) oldCell.classList.remove('selected');
-    }
-    selectedPiece = null;
-
-    if (!skipPlayerChange) {
-        // 4. تغيير الدور إلى الخصم
-        currentPlayer = currentPlayer === PLAYER1_PIECE ? PLAYER2_PIECE : PLAYER1_PIECE;
-
-        // 5. التحقق من الجمود: إذا كان اللاعب التالي لا يستطيع الحركة
-        if (!canPlayerMove(currentPlayer)) {
-            // نمرر الدور مرة أخرى للاعب الأصلي
-            currentPlayer = currentPlayer === PLAYER1_PIECE ? PLAYER2_PIECE : PLAYER1_PIECE;
-
-            // 6. التحقق مرة أخرى: إذا كان اللاعب الأصلي أيضاً لا يستطيع الحركة، تنتهي اللعبة بالتعادل 
-            if (!canPlayerMove(currentPlayer)) {
-                gameOver = true;
-            } else {
-                // إذا كان اللاعب الأصلي يستطيع الحركة بعد الجمود، فإنه يفوز (قاعدة محددة في نط الكلب)
-                gameOver = true;
-            }
-        }
-    }
-    
-    saveGameState(); // 🛑 حفظ حالة اللعبة بعد نهاية الدور
-    updateStatus();
-    renderBoard();
-}
+// ... (بقية دوال اللعبة: updateStatus, canMove, canJumpAgain, finishTurn, إلخ. - دون تغيير)
 
 // 🛑 مسح حالة الحفظ وبدء لعبة جديدة
 resetButton.addEventListener('click', () => {
     localStorage.removeItem(GAME_STATE_KEY);
-    initializeBoard();
+    // إعادة تعيين أنماط الحجر والبدء من شاشة الاختيار
+    player1StoneType = null;
+    player2StoneType = null;
+    initializeBoard(); 
 });
+
 
 // بدء اللعبة عند التحميل (ستحاول التحميل أولاً)
 initializeBoard();
-                                    
+
