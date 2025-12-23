@@ -9,17 +9,27 @@
     --select-green: #4CAF50; 
     --font-color: #333;
 }
-/* ... (كود الـ body و header و board-grid لم يتغير) ... */
 
-.board-grid {
-    /* ... (خصائص اللوحة) ... */
+body {
+    font-family: 'Times New Roman', serif; 
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #F8F5F0; 
+    margin: 0;
+    padding: 20px;
+    color: var(--font-color);
+    min-height: 100vh;
 }
 
-.cell {
-    /* ... (خصائص الخلية) ... */
-}
+header { /* ... (بقية الأنماط) ... */ }
+h1 { /* ... (بقية الأنماط) ... */ }
+#game-status { /* ... (بقية الأنماط) ... */ }
+.board-grid { /* ... (بقية الأنماط) ... */ }
+.cell { /* ... (بقية الأنماط) ... */ }
 .cell:nth-child(odd) { background-color: var(--cell-light); }
 .cell:nth-child(even) { background-color: var(--cell-dark); }
+.cell[data-row="2"][data-col="2"] { /* ... (أنماط المركز) ... */ }
 
 /* 🛑 حركة الوميض (النبض) 🛑 */
 @keyframes pulse-green {
@@ -34,14 +44,15 @@
     animation: pulse-green 0.8s infinite alternate; 
 }
 
+/* 🛑 النمط الأساسي للقطعة - العمق والثبات 🛑 */
 .piece {
     width: 75%; 
     height: 75%;
     border-radius: 50%;
-    /* 🛑 التأثير الحجري الواقعي: ظل خارجي وداخلي لتوفير العمق 🛑 */
+    /* الظل الخارجي والداخلي للواقعية */
     box-shadow: 
-        0 10px 20px rgba(0, 0, 0, 0.6), /* ظل أرضي قوي */
-        inset 0 0 15px rgba(255, 255, 255, 0.4); /* إضاءة علوية */
+        0 8px 15px rgba(0, 0, 0, 0.7), /* ظل أرضي قوي جداً */
+        inset 0 0 18px rgba(255, 255, 255, 0.5); /* إضاءة حادة علوية */
     transition: background-color 0.2s, transform 0.2s;
     position: relative; 
     z-index: 2;
@@ -52,7 +63,7 @@
     font-size: 1.5em; 
     font-family: 'Segoe UI Symbol', sans-serif; 
     
-    /* 🛑 مهم: إزالة أي لون افتراضي لتمكين أنماط stone-X 🛑 */
+    /* مهم جداً لتطبيق أنماط stone-X: نلغي أي خلفية افتراضية */
     background-color: transparent !important; 
     border: none !important;
 }
@@ -61,11 +72,11 @@
 .piece::before {
     content: '🐾'; 
     color: white; 
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.5); 
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.8); 
     transition: color 0.2s, content 0.2s;
 }
 
-/* 🛑 إزالة أي أنماط خلفية متضاربة 🛑 */
+/* نلغي أي أنماط افتراضية لـ player1 و player2 لتمكين أنماط الحجر */
 .player1, .player2 {
     background: none !important;
     border: none !important;
@@ -74,8 +85,8 @@
 .cell.selected .piece {
     background-color: var(--select-green) !important; 
     box-shadow: 
-        0 0 15px rgba(76, 175, 80, 1), 
-        0 0 5px rgba(0,0,0,0.5); 
+        0 0 20px rgba(76, 175, 80, 1), 
+        0 5px 10px rgba(0,0,0,0.5); 
     border: none !important;
     transform: scale(1.05); 
 }
@@ -87,7 +98,10 @@
 /* ---------------------------------- */
 /* 🛑 أنماط شاشة الاختيار 🛑 */
 /* ---------------------------------- */
-/* ... (أنماط selection-screen و stone-option كما هي) ... */
+
+#selection-screen { /* ... (أنماط الشاشة) ... */ }
+.player-selection { /* ... (أنماط اللاعب) ... */ }
+.options-container { /* ... (أنماط الحاويات) ... */ }
 
 .stone-option {
     display: flex;
@@ -102,6 +116,7 @@
     width: 80px; 
 }
 
+/* تصغير القطعة في شاشة الاختيار وتغيير الظل */
 .stone-option .piece {
     width: 40px; 
     height: 40px; 
@@ -109,75 +124,61 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.2); 
     border: 1px solid #ccc;
 }
-
 .stone-option .piece::before {
     font-size: 1.2em;
     color: #212121; 
     text-shadow: none;
 }
+.stone-option.selected { /* ... (أنماط التحديد) ... */ }
 
 
 /* ---------------------------------- */
-/* 🛑 أنماط الحجارة الواقعية عالية الجودة 🛑 */
+/* 🛑 أنماط الحجارة الواقعية (نظيفة ومركزة) 🛑 */
 /* ---------------------------------- */
 
-/* 💎 Style A: حجر الأوبسيديان/البازلت الأسود (Black Basalt) */
+/* 💎 Style A: حجر الأوبسيديان/البازلت (Black Basalt) */
 .player1 .stone-A {
     background: radial-gradient(circle at 30% 30%, #424242 0%, #1A1A1A 80%, #000000 100%);
-    box-shadow: 0 5px 10px rgba(0,0,0,0.8), inset 0 0 20px rgba(255,255,255,0.2); 
 }
 .player2 .stone-A {
     background: radial-gradient(circle at 30% 30%, #5D4037 0%, #3E2723 80%, #211512 100%);
-    box-shadow: 0 5px 10px rgba(0,0,0,0.8), inset 0 0 20px rgba(255,255,255,0.2); 
 }
 .player1 .stone-A::before, .player2 .stone-A::before { color: white; } 
-
 
 /* 🟡 Style B: حجر الكوارتز/التوباز الأصفر (Topaz/Quartz) */
 .player1 .stone-B {
     background: radial-gradient(circle at 60% 60%, #FFD54F, #FFB300);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3), inset 0 0 15px #FFECB3; 
 }
 .player2 .stone-B {
     background: radial-gradient(circle at 60% 60%, #FF8A65, #E64A19);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3), inset 0 0 15px #FFCCBC;
 }
 .player1 .stone-B::before, .player2 .stone-B::before { color: #212121; } 
-
 
 /* 🟢 Style C: حجر اليشم الأخضر (Green Jade) */
 .player1 .stone-C {
     background: radial-gradient(circle at 40% 40%, #A5D6A7, #4CAF50);
-    box-shadow: 0 3px 5px rgba(0,0,0,0.2), inset 0 0 10px #C8E6C9; 
 }
 .player2 .stone-C {
     background: radial-gradient(circle at 40% 40%, #4DB6AC, #009688);
-    box-shadow: 0 3px 5px rgba(0,0,0,0.2), inset 0 0 10px #B2DFDB; 
 }
 .player1 .stone-C::before, .player2 .stone-C::before { color: #212121; } 
-
 
 /* 🧊 Style D: حجر القمر الأبيض (Moonstone) */
 .player1 .stone-D {
     background: radial-gradient(circle at 50% 50%, #ECEFF1, #90A4AE);
-    box-shadow: 0 6px 10px rgba(0,0,0,0.2), inset 0 0 20px rgba(255,255,255,0.8);
 }
 .player2 .stone-D {
     background: radial-gradient(circle at 50% 50%, #B3E5FC, #4FC3F7);
-    box-shadow: 0 6px 10px rgba(0,0,0,0.2), inset 0 0 20px rgba(255,255,255,0.8);
 }
 .player1 .stone-D::before, .player2 .stone-D::before { color: #212121; }
-
 
 /* 🟤 Style E: حجر الغرانيت/الطين البني (Brown Granite) */
 .player1 .stone-E {
     background: radial-gradient(circle at 40% 40%, #8D6E63, #4E342E);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.4);
     border: 3px solid #3E2723;
 }
 .player2 .stone-E {
     background: radial-gradient(circle at 40% 40%, #A1887F, #6D4C41);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.4);
     border: 3px solid #5D4037;
 }
 .player1 .stone-E::before { color: white; }
@@ -185,7 +186,5 @@
 
 
 /* ... (بقية الأنماط) ... */
-
-.hidden {
-    display: none !important;
-}
+.action-button { /* ... (أنماط الأزرار) ... */ }
+.hidden { display: none !important; }
