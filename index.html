@@ -1,3 +1,47 @@
+...
+<header>
+    <h1>لعبة نط الكلب السودانية</h1>
+    <p id="game-status">الرجاء البدء باللعب...</p>
+</header>
+
+<main>
+    
+    <div id="selection-screen">
+        <h2>اختر نوع حجارتك</h2>
+        
+        <div class="player-selection" id="player1-selector">
+            <h3>اللاعب الأسود (الأول)</h3>
+            <div class="options-container">
+                <button class="stone-option" data-stone-type="A">حجر A</button>
+                <button class="stone-option" data-stone-type="B">حجر B</button>
+                <button class="stone-option" data-stone-type="C">حجر C</button>
+                <button class="stone-option" data-stone-type="D">حجر D</button>
+                <button class="stone-option" data-stone-type="E">حجر E</button>
+            </div>
+            <p id="p1-choice-status">لم يتم الاختيار بعد.</p>
+        </div>
+
+        <div class="player-selection" id="player2-selector">
+            <h3>اللاعب الأحمر (الثاني)</h3>
+            <div class="options-container">
+                <button class="stone-option" data-stone-type="A">حجر A</button>
+                <button class="stone-option" data-stone-type="B">حجر B</button>
+                <button class="stone-option" data-stone-type="C">حجر C</button>
+                <button class="stone-option" data-stone-type="D">حجر D</button>
+                <button class="stone-option" data-stone-type="E">حجر E</button>
+            </div>
+            <p id="p2-choice-status">لم يتم الاختيار بعد.</p>
+        </div>
+        
+        <button id="start-game-button" class="action-button" disabled>ابدأ اللعب</button>
+    </div>
+    
+    <div id="board" class="board-grid hidden"> 
+    </div>
+
+    <button id="reset-button" class="action-button">إعادة تعيين</button>
+</main>
+...
 
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
