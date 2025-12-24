@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -11,17 +10,26 @@
 </head>
 <body>
     <header>
-        <h1>لعبة نط الكلب السودانية</h1>
-        <p id="game-status">الرجاء البدء باللعب...</p>
-    </header>
+        </header>
 
     <main>
+        
+        <div id="player2-status-container" class="player-status-container">
+            <span id="player2-turn" class="player-label">🐕 أحمر (دورك)</span>
+            <div id="player2-captures" class="captures-display"></div>
+        </div>
+
         <div id="board" class="board-grid">
         </div>
 
         <div style="display: flex; gap: 10px;">
             <button id="reset-button" class="action-button">إعادة تعيين</button>
             <button id="rules-button" class="action-button" style="background-color: var(--select-green);">قواعد اللعب</button>
+        </div>
+        
+        <div id="player1-status-container" class="player-status-container">
+            <div id="player1-captures" class="captures-display"></div>
+            <span id="player1-turn" class="player-label">🐾 أسود (دورك)</span>
         </div>
         
     </main>
@@ -36,3 +44,4 @@
     <script src="script.js"></script>
 </body>
 </html>
+
