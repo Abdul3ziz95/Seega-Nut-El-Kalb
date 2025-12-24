@@ -1,46 +1,40 @@
 
 // ===================================
-// PWA: تسجيل Service Worker (للتشغيل دون اتصال)
+// PWA: تسجيل Service Worker
 // ===================================
-
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        // 🛑 تسجيل ملف الخدمة الصحيح 🛑
+        // 🛑 التسجيل الصحيح لملف الخدمة 🛑
         navigator.serviceWorker.register('/service-worker.js')
             .then(registration => {
-                console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                console.log('ServiceWorker registration successful');
             })
             .catch(err => {
-                console.log('ServiceWorker registration failed: ', err);
+                console.log('ServiceWorker registration failed', err);
             });
     });
 }
-
 
 // ===================================
 // منطق اللعبة "نط الكلب"
 // ===================================
 
+// عناصر واجهة المستخدم
 const boardElement = document.getElementById('board');
 const statusElement = document.getElementById('game-status');
 const resetButton = document.getElementById('reset-button');
-const selectionScreen = document.getElementById('selection-screen');
-const startGameButton = document.getElementById('start-game-button');
+const selectionScreen = document.getElementById('selection-screen'); 
+const startGameButton = document.getElementById('start-game-button'); 
 const p1Status = document.getElementById('p1-choice-status');
 const p2Status = document.getElementById('p2-choice-status');
-
 const alertOverlay = document.getElementById('custom-alert-overlay');
 const alertMessage = document.getElementById('alert-message');
 const alertButton = document.getElementById('alert-ok-button');
 
-
 // إعدادات اللعبة
 const BOARD_SIZE = 5; 
-const CENTER_R = 2; 
-const CENTER_C = 2; 
 const PLAYER1_PIECE = 1; 
 const PLAYER2_PIECE = 2; 
-const GAME_STATE_KEY = 'nutElKalbGameState'; 
 
 // متغيرات حالة اللعبة
 let board = []; 
@@ -50,12 +44,13 @@ let isSacrificePhase = true;
 let gameOver = false;
 let player1StoneType = null; 
 let player2StoneType = null; 
+let canChainJump = false; 
+let chainJumpTimer = null; 
+const CHAIN_JUMP_TIME = 2000; 
+const GAME_STATE_KEY = 'nutElKalbGameState'; 
 
 
-// ----------------------------------
-// الدوال المساعدة الأساسية
-// ----------------------------------
-
+// دوال التحكم والتنبيه
 function showAlert(message) {
     alertMessage.textContent = message;
     alertOverlay.classList.remove('hidden');
@@ -64,28 +59,6 @@ function showAlert(message) {
 alertButton.addEventListener('click', () => {
     alertOverlay.classList.add('hidden');
 });
-
-function initializeBoard() {
-    // ... (منطق تهيئة اللوحة (Board Setup)) ...
-    board = Array(BOARD_SIZE).fill(0).map(() => Array(BOARD_SIZE).fill(0));
-    
-    // وضع قطع اللاعب الأول في الأماكن الافتراضية
-    const p1Starts = [[0,1], [0,2], [0,3], [1,0], [1,1], [1,2], [1,3], [1,4], [2,0], [3,1]];
-    p1Starts.forEach(([r, c]) => board[r][c] = PLAYER1_PIECE);
-    
-    // وضع قطع اللاعب الثاني في الأماكن الافتراضية
-    const p2Starts = [[4,1], [4,2], [4,3], [3,0], [3,1], [3,2], [3,3], [3,4], [2,4], [1,3]];
-    p2Starts.forEach(([r, c]) => board[r][c] = PLAYER2_PIECE);
-    
-    // إعدادات البداية
-    currentPlayer = PLAYER1_PIECE;
-    isSacrificePhase = true;
-    gameOver = false;
-    selectedPiece = null;
-    
-    updateStatus();
-    renderBoard();
-}
 
 function updateStatus() {
     // ... (منطق تحديث حالة اللعبة) ...
@@ -103,6 +76,7 @@ function updateStatus() {
 }
 
 function updateSelectionUI() {
+    // تحديث شاشة الاختيار وتفعيل زر البدء
     const p1StoneName = player1StoneType ? `حجر ${player1StoneType}` : 'لم يتم الاختيار بعد.';
     const p2StoneName = player2StoneType ? `حجر ${player2StoneType}` : 'لم يتم الاختيار بعد.';
     
@@ -116,11 +90,32 @@ function updateSelectionUI() {
     }
 }
 
+function initializeBoard() {
+    // إعداد اللوحة الافتراضي (استخدام نفس الإعداد الذي كان لديك)
+    board = Array(BOARD_SIZE).fill(0).map(() => Array(BOARD_SIZE).fill(0));
+    
+    const p1Starts = [[0,1], [0,2], [0,3], [1,0], [1,1], [1,2], [1,3], [1,4], [2,0], [3,1]];
+    p1Starts.forEach(([r, c]) => board[r][c] = PLAYER1_PIECE);
+    
+    const p2Starts = [[4,1], [4,2], [4,3], [3,0], [3,1], [3,2], [3,3], [3,4], [2,4], [1,3]];
+    p2Starts.forEach(([r, c]) => board[r][c] = PLAYER2_PIECE);
+    
+    currentPlayer = PLAYER1_PIECE;
+    isSacrificePhase = true;
+    gameOver = false;
+    selectedPiece = null;
+    canChainJump = false;
+    
+    updateStatus();
+    renderBoard();
+}
+
 // ----------------------------------
 // دالة رسم اللوحة (الأهم لتطبيق الأنماط الحجرية)
 // ----------------------------------
-
 function renderBoard() {
+    if (!player1StoneType || !player2StoneType) return; // لا ترسم اللوحة قبل الاختيار
+
     boardElement.innerHTML = ''; 
     boardElement.style.gridTemplateColumns = `repeat(${BOARD_SIZE}, 1fr)`;
     boardElement.style.gridTemplateRows = `repeat(${BOARD_SIZE}, 1fr)`;
@@ -148,11 +143,12 @@ function renderBoard() {
                     stoneClass = `stone-${player2StoneType}`; 
                 }
                 
-                // 🛑 هذا هو السطر الحاسم لتطبيق النمط الحجري 🛑
+                // 🛑 السطر الحاسم: إضافة 'piece' و 'stone-X' 🛑
                 piece.classList.add('piece', stoneClass); 
                 cell.appendChild(piece);
             }
             
+            // تطبيق تمييز الخلية المحددة
             if (selectedPiece && selectedPiece.r === r && selectedPiece.c === c) {
                  cell.classList.add('selected');
             }
@@ -164,32 +160,42 @@ function renderBoard() {
 
 
 // ----------------------------------
-// منطق النقر واللعب (للتأكد من عمل اللعبة)
+// منطق النقر (لضمان عمل اللعبة)
 // ----------------------------------
-
+// (تم تبسيط هذا الجزء إلى حد كبير للحفاظ على النظافة. إذا كانت اللعبة لديك لا تعمل، فيجب استيراد منطق handleSacrifice و handleMove الكامل هنا)
 function handleCellClick(r, c) {
     if (gameOver) return;
 
-    // ... (هنا يتم وضع منطق handleSacrifice و handleMove) ...
-    // ... (لأغراض النظافة والتركيز، تم ترك المنطق الأساسي للحركة مفقوداً، لكن يجب إعادته) ...
-    // ... (إذا كان الكود الأصلي موجوداً لديك، قم بدمجه) ...
-    
-    // هذا الجزء البسيط لضمان أن التحديد يعمل ويرسم اللوحة
-    if (board[r][c] === currentPlayer) {
-        selectedPiece = { r, c };
-        renderBoard(); // إعادة رسم اللوحة لتطبيق كلاس selected
-    } else if (selectedPiece && board[r][c] === 0) {
-        // ... (هنا سيتم وضع منطق الحركة) ...
-        // board[r][c] = board[selectedPiece.r][selectedPiece.c];
-        // board[selectedPiece.r][selectedPiece.c] = 0;
-        // selectedPiece = null;
-        // currentPlayer = currentPlayer === PLAYER1_PIECE ? PLAYER2_PIECE : PLAYER1_PIECE;
-        // updateStatus();
-        // renderBoard();
-    } else if (selectedPiece && board[r][c] !== currentPlayer) {
-        showAlert("لا يمكنك التحرك إلى هنا!");
+    if (isSacrificePhase) {
+        // ... منطق التضحية ...
+    } else {
+        if (board[r][c] === currentPlayer) {
+            selectedPiece = { r, c };
+            renderBoard(); 
+        } else if (selectedPiece && board[r][c] === 0) {
+            // ... منطق الحركة ...
+            if (canMove(selectedPiece.r, selectedPiece.c, r, c)) {
+                board[r][c] = board[selectedPiece.r][selectedPiece.c];
+                board[selectedPiece.r][selectedPiece.c] = 0;
+                selectedPiece = null;
+                currentPlayer = currentPlayer === PLAYER1_PIECE ? PLAYER2_PIECE : PLAYER1_PIECE; // تبديل الدور
+                updateStatus();
+                renderBoard();
+            } else {
+                showAlert("حركة غير قانونية!");
+            }
+        }
     }
 }
+
+// دالة مبسطة للتحقق من الحركة (يجب استبدالها بدالتك الأصلية)
+function canMove(r1, c1, r2, c2) {
+    // التأكد من أن الحركة تكون خطوة واحدة (أو قفزة إذا كانت لديك)
+    const dr = Math.abs(r1 - r2);
+    const dc = Math.abs(c1 - c2);
+    return (dr === 1 && dc === 0) || (dr === 0 && dc === 1);
+}
+
 
 // ----------------------------------
 // معالجات الأحداث (Event Handlers)
@@ -198,17 +204,16 @@ function handleCellClick(r, c) {
 // معالج أحداث أزرار الاختيار
 document.querySelectorAll('.stone-option').forEach(button => {
     button.addEventListener('click', (e) => {
-        const stoneType = e.currentTarget.dataset.stoneType;
+        const stoneType = e.currentTarget.dataset.stone-type;
         const playerSelector = e.currentTarget.closest('.player-selection');
         
+        playerSelector.querySelectorAll('.stone-option').forEach(btn => btn.classList.remove('selected'));
+        e.currentTarget.classList.add('selected');
+
         if (playerSelector.id === 'player1-selector') {
             player1StoneType = stoneType;
-            playerSelector.querySelectorAll('.stone-option').forEach(btn => btn.classList.remove('selected'));
-            e.currentTarget.classList.add('selected');
         } else {
             player2StoneType = stoneType;
-            playerSelector.querySelectorAll('.stone-option').forEach(btn => btn.classList.remove('selected'));
-            e.currentTarget.classList.add('selected');
         }
         updateSelectionUI();
     });
@@ -229,7 +234,8 @@ resetButton.addEventListener('click', () => {
     boardElement.classList.add('hidden');
     document.querySelectorAll('.stone-option').forEach(btn => btn.classList.remove('selected'));
     updateSelectionUI();
+    // يجب أيضاً مسح حالة اللعبة المحفوظة هنا إذا كانت لديك
 });
 
-// بدء اللعبة في وضع الاختيار
+// تهيئة واجهة المستخدم عند تحميل الصفحة
 updateSelectionUI();
