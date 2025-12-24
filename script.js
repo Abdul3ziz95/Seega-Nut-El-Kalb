@@ -172,7 +172,7 @@ function renderBoard() {
                 cell.appendChild(piece);
             }
             
-            // 🟢 إضافة كلاس 'selected' لتفعيل التمييز الأخضر في CSS 🟢
+            // 🟢 التعديل هنا: إضافة كلاس 'selected' للـ CELL إذا كانت القطعة مختارة 🟢
             if (selectedPiece && selectedPiece.r === r && selectedPiece.c === c) {
                  cell.classList.add('selected');
             }
@@ -329,6 +329,7 @@ function selectPiece(r, c) {
     
     // إزالة التحديد القديم
     if (selectedPiece) {
+        // 🛑 إزالة الكلاس 'selected' من الخلية القديمة
         const oldCell = document.querySelector(`[data-row="${selectedPiece.r}"][data-col="${selectedPiece.c}"]`);
         if (oldCell) oldCell.classList.remove('selected');
     }
@@ -340,11 +341,12 @@ function selectPiece(r, c) {
     } else {
         // اختر قطعة جديدة
         selectedPiece = { r: r, c: c };
+        // 🛑 إضافة الكلاس 'selected' للخلية الجديدة
         const newCell = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
         if (newCell) newCell.classList.add('selected');
     }
     saveGameState(); // 🛑 حفظ التحديد
-    renderBoard();
+    // renderBoard(); // لم يعد مطلوبًا هنا لأنه تم التحديث عبر classList
 }
 
 
@@ -430,7 +432,7 @@ function tryMove(newR, newC) {
                     // بدء مؤقت 2 ثانية
                     chainJumpTimer = setTimeout(() => {
                         if (canChainJump) { 
-                            // 🛑 تم التعديل هنا: ينهي الدور ويحوله للاعب التالي تلقائياً
+                            // 🛑 تم التصحيح لضمان تحويل الدور
                             finishTurn(); 
                         }
                     }, CHAIN_JUMP_TIME); 
@@ -496,6 +498,7 @@ function finishTurn(skipPlayerChange = false) {
     
     // إزالة التحديد
     if (selectedPiece) {
+        // 🛑 إزالة الكلاس 'selected' من الخلية القديمة
         const oldCell = document.querySelector(`[data-row="${selectedPiece.r}"][data-col="${selectedPiece.c}"]`);
         if (oldCell) oldCell.classList.remove('selected');
     }
