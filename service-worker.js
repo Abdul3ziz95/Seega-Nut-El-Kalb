@@ -1,18 +1,12 @@
-
-// ===================================
-// Service Worker Code
-// ===================================
-
-// 🛑 العودة إلى الإصدار الأصلي (الأكثر أماناً للعودة) 🛑
-const CACHE_NAME = 'nut-el-kalb-v1'; 
-
+const CACHE_NAME = 'nut-el-kalb-v1';
 const urlsToCache = [
     '/',
     '/index.html',
     '/style.css',
     '/script.js',
     '/manifest.json',
-    '/icon.png' 
+    // يجب إضافة مسارات الأيقونات هنا أيضاً بعد إنشائها
+    // '/assets/icon-192x192.png'
 ];
 
 // تثبيت ملف الخدمة وتخزين الأصول (Assets)
@@ -26,14 +20,13 @@ self.addEventListener('install', event => {
     );
 });
 
-// تفعيل ملف الخدمة وحذف أي نسخ جديدة
+// تفعيل ملف الخدمة وحذف أي نسخ قديمة من الذاكرة المؤقتة
 self.addEventListener('activate', event => {
     const cacheWhitelist = [CACHE_NAME];
     event.waitUntil(
         caches.keys().then(cacheNames => {
             return Promise.all(
                 cacheNames.map(cacheName => {
-                    // حذف أي كاش لا يطابق اسم الإصدار الحالي (v1)
                     if (cacheWhitelist.indexOf(cacheName) === -1) {
                         return caches.delete(cacheName);
                     }
@@ -41,19 +34,18 @@ self.addEventListener('activate', event => {
             );
         })
     );
-    return self.clients.claim();
 });
 
-// استراتيجية "Cache-first"
+// استراتيجية "Cache-first" (الاستخدام من الكاش أولاً، ثم الشبكة إذا لم يكن متوفراً)
 self.addEventListener('fetch', event => {
-    if (event.request.url.includes('chrome-extension://')) return;
-
     event.respondWith(
         caches.match(event.request)
             .then(response => {
+                // الكاش موجود، قم بعرضه
                 if (response) {
                     return response;
                 }
+                // الكاش غير موجود، اذهب للشبكة
                 return fetch(event.request);
             })
     );
