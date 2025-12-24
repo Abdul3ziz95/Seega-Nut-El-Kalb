@@ -1,3 +1,14 @@
+// ... (بداية الملف)
+const CACHE_NAME = 'nut-el-kalb-v3'; // 🛑 قم بتغيير رقم الإصدار هنا
+const urlsToCache = [
+    '/',
+    '/index.html',
+    '/style.css',
+    '/script.js',
+    '/manifest.json',
+    '/icon.png' 
+];
+// ... (بقية الكود كما هو)
 
 const CACHE_NAME = 'nut-el-kalb-v2'; // 🛑 تم تغيير اسم الكاش لإجبار المتصفح على التحديث 🛑
 const urlsToCache = [
