@@ -430,7 +430,8 @@ function tryMove(newR, newC) {
                     // بدء مؤقت 2 ثانية
                     chainJumpTimer = setTimeout(() => {
                         if (canChainJump) { 
-                            finishTurn(true); 
+                            // 🛑 تم التعديل هنا: ينهي الدور ويحوله للاعب التالي تلقائياً
+                            finishTurn(); 
                         }
                     }, CHAIN_JUMP_TIME); 
                     
