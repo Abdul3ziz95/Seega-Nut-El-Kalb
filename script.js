@@ -23,6 +23,8 @@ if ('serviceWorker' in navigator) {
 const boardElement = document.getElementById('board');
 const statusElement = document.getElementById('game-status');
 const resetButton = document.getElementById('reset-button');
+// 🟢 NEW: زر القوانين
+const rulesButton = document.getElementById('rules-button'); 
 const alertOverlay = document.getElementById('custom-alert-overlay');
 const alertMessage = document.getElementById('alert-message');
 const alertButton = document.getElementById('alert-ok-button');
@@ -33,7 +35,7 @@ const CENTER_R = 2;
 const CENTER_C = 2; 
 const PLAYER1_PIECE = 1; 
 const PLAYER2_PIECE = 2; 
-const GAME_STATE_KEY = 'nutElKalbGameState'; // 🛑 مفتاح حفظ حالة اللعبة 🛑
+const GAME_STATE_KEY = 'nutElKalbGameState'; 
 
 // متغيرات النط المتتالي
 let canChainJump = false; 
@@ -56,6 +58,26 @@ function showAlert(message) {
 alertButton.addEventListener('click', () => {
     alertOverlay.classList.add('hidden');
 });
+
+// 🟢 NEW: دالة لعرض التعليمات السودانية
+function showSudaneseRules() {
+    const rulesText = `
+        <h3 style="color: var(--board-color);">قوانين نط الكلب (مختصر)</h3>
+        <p style="text-align: right; font-size: 0.95em;">
+        * **البداية (التضحية):** أول حركة لازم تكون في المربع الفاضي (مربع الكلب) في نص اللوحة. اللاعب الأول بضحي بقطعة في المربع الفاضي، بعد داك اللعب العادي بيبدأ.
+        * **الحركة العادية:** ممكن تتحرك خطوة واحدة بس (قدام، وراء، يمين، شمال). 
+        * **النط والأكل:** عشان تاكل قطعة الخصم، لازم تنط من فوقها لمربع فاضي وراها مباشرة (أي اتجاه، حتى بالجنب). القطعة المأكولة بتتشال من اللوحة.
+        * **النط المتتالي:** لو أكلت قطعة ولسه في قطعة تانية ممكن تاكلها بالقطعة ذاتها، عندك ثانيتين (2 ثانية) تنط تاني قبل ما يخلص دورك.
+        * **الكسبان:** اللي بياكل كل قطع الخصم هو الكسبان!
+        </p>
+    `;
+    alertMessage.innerHTML = rulesText;
+    alertOverlay.classList.remove('hidden');
+}
+
+// 🟢 NEW: ربط زر القواعد بالدالة
+rulesButton.addEventListener('click', showSudaneseRules);
+
 
 // 🛑 New: Save game state to localStorage
 function saveGameState() {
@@ -172,7 +194,7 @@ function renderBoard() {
                 cell.appendChild(piece);
             }
             
-            // 🟢 التعديل هنا: إضافة كلاس 'selected' للـ CELL إذا كانت القطعة مختارة 🟢
+            // إضافة كلاس 'selected' للـ CELL إذا كانت القطعة مختارة
             if (selectedPiece && selectedPiece.r === r && selectedPiece.c === c) {
                  cell.classList.add('selected');
             }
@@ -184,21 +206,24 @@ function renderBoard() {
     boardElement.style.gridTemplateRows = `repeat(${BOARD_SIZE}, 1fr)`;
 }
 
-// 🛑 تحديث حالة الدور
+// 🛑 التعديل هنا: تغيير عرض حالة الدور إلى "دورك" فقط
 function updateStatus() {
     if (gameOver) {
         const winner = currentPlayer === PLAYER1_PIECE ? 'الأحمر' : 'الأسود';
         statusElement.textContent = `انتهت اللعبة! اللاعب ${winner} هو الفائز! 🏆`;
+        statusElement.style.color = 'var(--board-color)';
         return;
     }
     
-    const playerColor = currentPlayer === PLAYER1_PIECE ? 'الأسود' : 'الأحمر';
-    let statusText = `الدور الحالي: اللاعب ${playerColor}`;
+    // 🟢 تعيين لون الخط بناءً على اللاعب الحالي
+    statusElement.style.color = currentPlayer === PLAYER1_PIECE ? 'var(--player1-color)' : 'var(--player2-color)';
+    
+    let statusText = `دورك`;
 
     if (isSacrificePhase) {
         statusText += " (مرحلة التضحية)";
     } else if (canChainJump) {
-        statusText += " (دور إضافي - نط متتالي)";
+        statusText += " (نط متتالي)";
     }
     statusElement.textContent = statusText;
 }
@@ -329,7 +354,7 @@ function selectPiece(r, c) {
     
     // إزالة التحديد القديم
     if (selectedPiece) {
-        // 🛑 إزالة الكلاس 'selected' من الخلية القديمة
+        // إزالة الكلاس 'selected' من الخلية القديمة
         const oldCell = document.querySelector(`[data-row="${selectedPiece.r}"][data-col="${selectedPiece.c}"]`);
         if (oldCell) oldCell.classList.remove('selected');
     }
@@ -341,12 +366,11 @@ function selectPiece(r, c) {
     } else {
         // اختر قطعة جديدة
         selectedPiece = { r: r, c: c };
-        // 🛑 إضافة الكلاس 'selected' للخلية الجديدة
+        // إضافة الكلاس 'selected' للخلية الجديدة
         const newCell = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
         if (newCell) newCell.classList.add('selected');
     }
-    saveGameState(); // 🛑 حفظ التحديد
-    // renderBoard(); // لم يعد مطلوبًا هنا لأنه تم التحديث عبر classList
+    saveGameState(); 
 }
 
 
@@ -432,7 +456,6 @@ function tryMove(newR, newC) {
                     // بدء مؤقت 2 ثانية
                     chainJumpTimer = setTimeout(() => {
                         if (canChainJump) { 
-                            // 🛑 تم التصحيح لضمان تحويل الدور
                             finishTurn(); 
                         }
                     }, CHAIN_JUMP_TIME); 
@@ -456,7 +479,7 @@ function tryMove(newR, newC) {
         }
     }
     
-    saveGameState(); // 🛑 حفظ حالة اللعبة بعد الحركة
+    saveGameState(); 
     renderBoard();
 }
 
@@ -485,7 +508,7 @@ function finishTurn(skipPlayerChange = false) {
     if (gameOver) {
         renderBoard();
         updateStatus();
-        saveGameState(); // 🛑 حفظ حالة الانتهاء
+        saveGameState(); 
         return;
     }
     
@@ -498,7 +521,7 @@ function finishTurn(skipPlayerChange = false) {
     
     // إزالة التحديد
     if (selectedPiece) {
-        // 🛑 إزالة الكلاس 'selected' من الخلية القديمة
+        // إزالة الكلاس 'selected' من الخلية القديمة
         const oldCell = document.querySelector(`[data-row="${selectedPiece.r}"][data-col="${selectedPiece.c}"]`);
         if (oldCell) oldCell.classList.remove('selected');
     }
@@ -521,7 +544,7 @@ function finishTurn(skipPlayerChange = false) {
         }
     }
     
-    saveGameState(); // 🛑 حفظ حالة اللعبة بعد نهاية الدور
+    saveGameState(); 
     updateStatus();
     renderBoard();
 }
