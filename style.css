@@ -4,45 +4,12 @@
     --board-color: #795548; 
     --cell-light: #FFEBCC; 
     --cell-dark: #D7CCC8;  
-    --player1-color: #212121; 
-    --player2-color: #B71C1C; 
+    --player1-color: #212121; /* اللون الافتراضي (للتحديد وغيره) */
+    --player2-color: #B71C1C; /* اللون الافتراضي (للتحديد وغيره) */
     --select-green: #4CAF50; 
     --font-color: #333;
 }
-
-body {
-    font-family: 'Times New Roman', serif; 
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background-color: #F8F5F0; 
-    margin: 0;
-    padding: 20px;
-    color: var(--font-color);
-    min-height: 100vh;
-}
-
-header { /* ... (بقية الأنماط) ... */ }
-h1 { /* ... (بقية الأنماط) ... */ }
-#game-status { /* ... (بقية الأنماط) ... */ }
-.board-grid { /* ... (بقية الأنماط) ... */ }
-.cell { /* ... (بقية الأنماط) ... */ }
-.cell:nth-child(odd) { background-color: var(--cell-light); }
-.cell:nth-child(even) { background-color: var(--cell-dark); }
-.cell[data-row="2"][data-col="2"] { /* ... (أنماط المركز) ... */ }
-
-/* 🛑 حركة الوميض (النبض) 🛑 */
-@keyframes pulse-green {
-    0% { border-color: var(--select-green); box-shadow: 0 0 10px var(--select-green), inset 0 0 10px var(--select-green); }
-    50% { border-color: #81C784; box-shadow: 0 0 15px #81C784, inset 0 0 15px #81C784; } 
-    100% { border-color: var(--select-green); box-shadow: 0 0 10px var(--select-green), inset 0 0 10px var(--select-green); }
-}
-
-.cell.selected {
-    border: 3px solid var(--select-green); 
-    background-color: rgba(76, 175, 80, 0.4) !important; 
-    animation: pulse-green 0.8s infinite alternate; 
-}
+/* ... (كود الـ body و header و board-grid و cell) ... */
 
 /* 🛑 النمط الأساسي للقطعة - العمق والثبات 🛑 */
 .piece {
@@ -63,7 +30,7 @@ h1 { /* ... (بقية الأنماط) ... */ }
     font-size: 1.5em; 
     font-family: 'Segoe UI Symbol', sans-serif; 
     
-    /* مهم جداً لتطبيق أنماط stone-X: نلغي أي خلفية افتراضية */
+    /* 🛑 التصحيح الحاسم: إلغاء الخلفية الافتراضية 🛑 */
     background-color: transparent !important; 
     border: none !important;
 }
@@ -76,32 +43,15 @@ h1 { /* ... (بقية الأنماط) ... */ }
     transition: color 0.2s, content 0.2s;
 }
 
-/* نلغي أي أنماط افتراضية لـ player1 و player2 لتمكين أنماط الحجر */
+/* 🛑 التصحيح الحاسم: إزالة الخلفية من كلاسات اللاعبين لتجنب التعارض 🛑 */
 .player1, .player2 {
     background: none !important;
     border: none !important;
 }
 
-.cell.selected .piece {
-    background-color: var(--select-green) !important; 
-    box-shadow: 
-        0 0 20px rgba(76, 175, 80, 1), 
-        0 5px 10px rgba(0,0,0,0.5); 
-    border: none !important;
-    transform: scale(1.05); 
-}
-.cell.selected .piece::before {
-    content: '🐕'; 
-    color: white; 
-}
-
 /* ---------------------------------- */
-/* 🛑 أنماط شاشة الاختيار 🛑 */
+/* 🛑 أنماط شاشة الاختيار (تصغير القطعة وتحديدها) 🛑 */
 /* ---------------------------------- */
-
-#selection-screen { /* ... (أنماط الشاشة) ... */ }
-.player-selection { /* ... (أنماط اللاعب) ... */ }
-.options-container { /* ... (أنماط الحاويات) ... */ }
 
 .stone-option {
     display: flex;
@@ -115,8 +65,6 @@ h1 { /* ... (بقية الأنماط) ... */ }
     height: 90px;
     width: 80px; 
 }
-
-/* تصغير القطعة في شاشة الاختيار وتغيير الظل */
 .stone-option .piece {
     width: 40px; 
     height: 40px; 
@@ -129,11 +77,10 @@ h1 { /* ... (بقية الأنماط) ... */ }
     color: #212121; 
     text-shadow: none;
 }
-.stone-option.selected { /* ... (أنماط التحديد) ... */ }
 
 
 /* ---------------------------------- */
-/* 🛑 أنماط الحجارة الواقعية (نظيفة ومركزة) 🛑 */
+/* 🛑 أنماط الحجارة الواقعية 🛑 */
 /* ---------------------------------- */
 
 /* 💎 Style A: حجر الأوبسيديان/البازلت (Black Basalt) */
@@ -184,7 +131,4 @@ h1 { /* ... (بقية الأنماط) ... */ }
 .player1 .stone-E::before { color: white; }
 .player2 .stone-E::before { color: #212121; }
 
-
 /* ... (بقية الأنماط) ... */
-.action-button { /* ... (أنماط الأزرار) ... */ }
-.hidden { display: none !important; }
