@@ -3,8 +3,8 @@
 // Service Worker Code
 // ===================================
 
-// 🛑 قم بزيادة رقم الإصدار إلى v5 لضمان تجاوز كل النسخ القديمة 🛑
-const CACHE_NAME = 'nut-el-kalb-v5'; 
+// 🛑 قم بزيادة رقم الإصدار إلى v10 لضمان تجاوز كل النسخ القديمة بقوة 🛑
+const CACHE_NAME = 'nut-el-kalb-v10'; 
 
 const urlsToCache = [
     '/',
@@ -15,8 +15,9 @@ const urlsToCache = [
     '/icon.png' 
 ];
 
+// تثبيت ملف الخدمة وتخزين الأصول (Assets)
 self.addEventListener('install', event => {
-    console.log('[Service Worker] Installing Cache V5...');
+    console.log('[Service Worker V10] Installing new cache...');
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => {
@@ -27,21 +28,20 @@ self.addEventListener('install', event => {
 
 // تفعيل ملف الخدمة وحذف أي نسخ قديمة من الذاكرة المؤقتة
 self.addEventListener('activate', event => {
-    console.log('[Service Worker] Activating V5 and cleaning up old caches...');
+    console.log('[Service Worker V10] Activating and cleaning up old caches...');
     const cacheWhitelist = [CACHE_NAME];
     event.waitUntil(
         caches.keys().then(cacheNames => {
             return Promise.all(
                 cacheNames.map(cacheName => {
-                    // حذف أي كاش لا يطابق اسم الإصدار الحالي (v5)
                     if (cacheWhitelist.indexOf(cacheName) === -1) {
-                        console.log('[Service Worker] Deleting old cache:', cacheName);
                         return caches.delete(cacheName);
                     }
                 })
             );
         })
     );
+    // لضمان التفعيل الفوري للملف الجديد
     return self.clients.claim();
 });
 
