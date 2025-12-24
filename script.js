@@ -1,3 +1,4 @@
+
 // ===================================
 // PWA: تسجيل Service Worker (للتشغيل دون اتصال)
 // ===================================
@@ -20,21 +21,13 @@ if ('serviceWorker' in navigator) {
 // ===================================
 
 const boardElement = document.getElementById('board');
-const statusElement = document.getElementById('game-status'); // العنصر القديم
+const statusElement = document.getElementById('game-status');
 const resetButton = document.getElementById('reset-button');
+// 🟢 NEW: زر القوانين
 const rulesButton = document.getElementById('rules-button'); 
 const alertOverlay = document.getElementById('custom-alert-overlay');
 const alertMessage = document.getElementById('alert-message');
 const alertButton = document.getElementById('alert-ok-button');
-
-// 🟢 NEW: عناصر حالة اللاعبين والقطع المأسورة
-const player1StatusContainer = document.getElementById('player1-status-container');
-const player2StatusContainer = document.getElementById('player2-status-container');
-const player1TurnLabel = document.getElementById('player1-turn'); // اللاعب الأسود (الأسفل)
-const player2TurnLabel = document.getElementById('player2-turn'); // اللاعب الأحمر (الأعلى)
-const player1CapturesDisplay = document.getElementById('player1-captures'); // لعرض قطع اللاعب 2 المأسورة (الأسود هو من أسرها)
-const player2CapturesDisplay = document.getElementById('player2-captures'); // لعرض قطع اللاعب 1 المأسورة (الأحمر هو من أسرها)
-
 
 // إعدادات اللعبة
 const BOARD_SIZE = 5; 
@@ -48,10 +41,6 @@ const GAME_STATE_KEY = 'nutElKalbGameState';
 let canChainJump = false; 
 let chainJumpTimer = null; 
 const CHAIN_JUMP_TIME = 2000; // 2 ثانية
-
-// 🟢 NEW: متغيرات لحساب القطع المأسورة
-let player1Captures = 0; // عدد القطع التي أسرها اللاعب 1 (الأسود) - أي قطع اللاعب 2
-let player2Captures = 0; // عدد القطع التي أسرها اللاعب 2 (الأحمر) - أي قطع اللاعب 1
 
 let board = []; 
 let currentPlayer = 0; 
@@ -97,10 +86,7 @@ function saveGameState() {
         currentPlayer: currentPlayer,
         selectedPiece: selectedPiece,
         isSacrificePhase: isSacrificePhase,
-        gameOver: gameOver,
-        // 🟢 حفظ متغيرات القطع المأسورة
-        player1Captures: player1Captures, 
-        player2Captures: player2Captures
+        gameOver: gameOver
     };
     localStorage.setItem(GAME_STATE_KEY, JSON.stringify(state));
 }
@@ -115,10 +101,6 @@ function loadGameState() {
         selectedPiece = state.selectedPiece;
         isSacrificePhase = state.isSacrificePhase;
         gameOver = state.gameOver;
-
-        // 🟢 تحميل متغيرات القطع المأسورة
-        player1Captures = state.player1Captures || 0; 
-        player2Captures = state.player2Captures || 0; 
         
         // إعادة تعيين حالة النط المتتالي والمؤقت عند التحميل
         canChainJump = false; 
@@ -174,10 +156,6 @@ function initializeBoard() {
     if (chainJumpTimer) clearTimeout(chainJumpTimer);
     chainJumpTimer = null;
 
-    // 🟢 تصفير عداد القطع المأسورة للعبة الجديدة
-    player1Captures = 0;
-    player2Captures = 0;
-
     // اختيار اللاعب الأول عشوائيًا
     currentPlayer = Math.random() < 0.5 ? PLAYER1_PIECE : PLAYER2_PIECE;
 
@@ -228,70 +206,105 @@ function renderBoard() {
     boardElement.style.gridTemplateRows = `repeat(${BOARD_SIZE}, 1fr)`;
 }
 
-// 🛑 التعديل هنا: استخدام الواجهات الجديدة لحالة الدور وعرض القطع المأسورة
+// 🛑 التعديل هنا: تغيير عرض حالة الدور إلى "دورك" فقط
 function updateStatus() {
-    
-    // 1. إخفاء جميع مؤشرات الدور القديمة والجديدة
-    statusElement.style.display = 'none'; // إخفاء القديم
-    player1TurnLabel.classList.remove('active');
-    player2TurnLabel.classList.remove('active');
-    
-    // 2. مسح القطع المأسورة القديمة
-    player1CapturesDisplay.innerHTML = '';
-    player2CapturesDisplay.innerHTML = '';
-
-    let baseStatusText = ` دورك`;
-
-    if (isSacrificePhase) {
-        baseStatusText = " (مرحلة التضحية)";
-    } else if (canChainJump) {
-        baseStatusText = " (نط متتالي)";
-    }
-    
-    // 3. تحديث حالة الفوز
     if (gameOver) {
-        const winnerColor = currentPlayer === PLAYER1_PIECE ? 'الأحمر' : 'الأسود';
-        
-        // عرض حالة الفوز في الواجهتين
-        player1TurnLabel.textContent = `انتهت! الفائز: ${winnerColor} 🏆`;
-        player1TurnLabel.style.color = 'var(--board-color)';
-        player1TurnLabel.classList.add('active'); 
-        
-        player2TurnLabel.textContent = `انتهت! الفائز: ${winnerColor} 🏆`;
-        player2TurnLabel.style.color = 'var(--board-color)';
-        player2TurnLabel.classList.add('active'); 
+        const winner = currentPlayer === PLAYER1_PIECE ? 'الأحمر' : 'الأسود';
+        statusElement.textContent = `انتهت اللعبة! اللاعب ${winner} هو الفائز! 🏆`;
+        statusElement.style.color = 'var(--board-color)';
         return;
     }
     
-    // 4. تحديث حالة الدور
-    if (currentPlayer === PLAYER1_PIECE) { // اللاعب الأسود (الأسفل)
-        player1TurnLabel.textContent = `🐾${baseStatusText}`;
-        player1TurnLabel.style.color = 'var(--player1-color)';
-        player1TurnLabel.classList.add('active');
-    } else { // اللاعب الأحمر (الأعلى)
-        player2TurnLabel.textContent = `🐕${baseStatusText}`;
-        player2TurnLabel.style.color = 'var(--player2-color)';
-        player2TurnLabel.classList.add('active');
-    }
+    // 🟢 تعيين لون الخط بناءً على اللاعب الحالي
+    statusElement.style.color = currentPlayer === PLAYER1_PIECE ? 'var(--player1-color)' : 'var(--player2-color)';
     
-    // 5. عرض القطع المأسورة
-    
-    // القطع التي أسرها اللاعب الأسود (player1Captures) هي قطع اللاعب الأحمر (player2)
-    for (let i = 0; i < player1Captures; i++) {
-        const piece = document.createElement('div');
-        piece.classList.add('captured-piece', 'player2');
-        player1CapturesDisplay.appendChild(piece);
-    }
+    let statusText = `دورك`;
 
-    // القطع التي أسرها اللاعب الأحمر (player2Captures) هي قطع اللاعب الأسود (player1)
-    for (let i = 0; i < player2Captures; i++) {
-        const piece = document.createElement('div');
-        piece.classList.add('captured-piece', 'player1');
-        player2CapturesDisplay.appendChild(piece);
+    if (isSacrificePhase) {
+        statusText += " (مرحلة التضحية)";
+    } else if (canChainJump) {
+        statusText += " (نط متتالي)";
     }
+    statusElement.textContent = statusText;
 }
 
-// ... (بقية دوال المساعدة: canMove, canJumpAgain, canPlayerMove) ...
+// دالة مساعدة: التحقق مما إذا كانت قطعة معينة يمكنها الحركة (خطوة أو نط)
+function canMove(r, c) {
+    const pieceType = board[r][c];
+    const opponent = pieceType === PLAYER1_PIECE ? PLAYER2_PIECE : PLAYER1_PIECE;
+
+    // 1. فحص الحركات بخطوة واحدة (أفقي/عمودي فقط)
+    const singleSteps = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+    for (const [dr, dc] of singleSteps) {
+        const newR = r + dr;
+        const newC = c + dc;
+        if (newR >= 0 && newR < BOARD_SIZE && newC >= 0 && newC < BOARD_SIZE && board[newR][newC] === 0) {
+            return true;
+        }
+    }
+
+    // 2. فحص حركات النط القاتل (خطوتين - جميع الاتجاهات)
+    const doubleSteps = [
+        [2, 0], [-2, 0], [0, 2], [0, -2], 
+        [2, 2], [2, -2], [-2, 2], [-2, -2] 
+    ];
+
+    for (const [dr, dc] of doubleSteps) {
+        const newR = r + dr;
+        const newC = c + dc;
+        if (newR >= 0 && newR < BOARD_SIZE && newC >= 0 && newC < BOARD_SIZE && board[newR][newC] === 0) {
+            
+            const jumpedR = r + Math.floor(dr / 2);
+            const jumpedC = c + Math.floor(dc / 2);
+            
+            if (board[jumpedR][jumpedC] === opponent) {
+                return true;
+            }
+        }
+    }
+    
+    return false;
+}
+
+// دالة مساعدة: التحقق مما إذا كانت قطعة معينة يمكنها القيام بحركة نط (قتل) فقط
+function canJumpAgain(r, c) {
+    const pieceType = board[r][c];
+    const opponent = pieceType === PLAYER1_PIECE ? PLAYER2_PIECE : PLAYER1_PIECE;
+
+    const doubleSteps = [
+        [2, 0], [-2, 0], [0, 2], [0, -2], 
+        [2, 2], [2, -2], [-2, 2], [-2, -2] 
+    ];
+
+    for (const [dr, dc] of doubleSteps) {
+        const newR = r + dr;
+        const newC = c + dc;
+        if (newR >= 0 && newR < BOARD_SIZE && newC >= 0 && newC < BOARD_SIZE && board[newR][newC] === 0) {
+            
+            const jumpedR = r + Math.floor(dr / 2);
+            const jumpedC = c + Math.floor(dc / 2);
+            
+            if (board[jumpedR][jumpedC] === opponent) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// دالة التحقق من أن اللاعب يمكنه الحركة (لحل مشكلة الجمود)
+function canPlayerMove(player) {
+    for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+            if (board[r][c] === player) {
+                if (canMove(r, c)) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
 
 
 // معالج النقر على المربع أو القطعة
@@ -432,13 +445,6 @@ function tryMove(newR, newC) {
                 const jumpedC = oldC + Math.floor(dC / 2);
                 board[jumpedR][jumpedC] = 0;
                 
-                // 🟢 NEW: تحديث عداد القطع المأسورة
-                if (currentPlayer === PLAYER1_PIECE) {
-                    player1Captures++; // اللاعب الأسود (PLAYER1) أسر قطعة حمراء (PLAYER2)
-                } else {
-                    player2Captures++; // اللاعب الأحمر (PLAYER2) أسر قطعة سوداء (PLAYER1)
-                }
-                
                 // منطق النط المتتالي
                 if (canJumpAgain(newR, newC)) {
                     
@@ -551,4 +557,3 @@ resetButton.addEventListener('click', () => {
 
 // بدء اللعبة عند التحميل (ستحاول التحميل أولاً)
 initializeBoard();
-                
