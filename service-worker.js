@@ -1,4 +1,5 @@
-const CACHE_NAME = 'nut-el-kalb-v1';
+const CACHE_NAME = 'nut-el-kalb-v2'; // 🛑 تم تحديث الإصدار إلى v2 🛑
+
 const urlsToCache = [
     '/',
     '/index.html',
@@ -34,6 +35,7 @@ self.addEventListener('activate', event => {
             );
         })
     );
+    return self.clients.claim();
 });
 
 // استراتيجية "Cache-first" (الاستخدام من الكاش أولاً، ثم الشبكة إذا لم يكن متوفراً)
@@ -45,8 +47,9 @@ self.addEventListener('fetch', event => {
                 if (response) {
                     return response;
                 }
-                // الكاش غير موجود، اذهب للشبكة
+                // إذا لم يكن الكاش موجوداً، اذهب إلى الشبكة
                 return fetch(event.request);
             })
     );
 });
+
