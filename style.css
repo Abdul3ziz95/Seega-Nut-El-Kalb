@@ -1,4 +1,3 @@
-
 :root {
     /* Artistic/Earthy Palette - لوحة ألوان فنية */
     --board-color: #795548; /* بني عميق (لون اللوحة الخارجي) */
@@ -30,14 +29,14 @@ header {
 
 h1 {
     color: var(--board-color);
-    border-bottom: 3px solid var(--select-green);
+    /* 🛑 تم إزالة: border-bottom: 3px solid var(--select-green); */
     padding-bottom: 5px;
 }
 
 #game-status {
     font-size: 1.2em;
     font-weight: bold;
-    color: var(--player1-color);
+    /* سيتم تحديد اللون في script.js */
 }
 
 main {
@@ -71,7 +70,7 @@ main {
     opacity: 0.9;
 }
 
-/* 🟢 الكود الجديد: تمييز الخلية بأكملها باللون الأخضر 🟢 */
+/* 🟢 تمييز الخلية بأكملها باللون الأخضر 🟢 */
 .cell.selected {
     /* خلفية المربع أخضر */
     background-color: var(--select-green) !important; 
@@ -115,10 +114,8 @@ main {
     border: none;
 }
 
-/* تعديل الكود القديم: نجعل القطعة شفافة قليلاً (اختياري) أو نتركها بلونها الطبيعي */
-/* سنبقي القطعة بلونها، لكن الخلية ستتغير */
+/* تلوين القطعة داخل المربع الأخضر */
 .cell.selected .piece {
-    /* يمكن ترك هذا الكود القديم لتمييز شكل القطعة داخل المربع الأخضر */
     background-color: var(--player1-color) !important; 
     box-shadow: 0 0 10px rgba(255, 255, 255, 0.5); 
     border: none !important;
@@ -131,7 +128,7 @@ main {
     font-size: 1.8em; 
 }
 
-/* زر إعادة التعيين */
+/* زر إعادة التعيين والقوانين */
 .action-button {
     padding: 10px 20px;
     font-size: 1em;
@@ -148,7 +145,7 @@ main {
     background-color: #5d4037;
 }
 
-/* تنبيه مخصص */
+/* تنبيه مخصص (شاشة القواعد) */
 #custom-alert-overlay {
     position: fixed;
     top: 0;
@@ -169,6 +166,8 @@ main {
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
     text-align: center;
     width: 300px;
+    max-height: 80vh; /* تحديد أقصى ارتفاع */
+    overflow-y: auto; /* إضافة شريط تمرير إذا لزم الأمر */
 }
 
 #alert-message {
@@ -180,3 +179,4 @@ main {
 .hidden {
     display: none !important;
 }
+
