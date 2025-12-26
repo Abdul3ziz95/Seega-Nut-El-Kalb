@@ -28,11 +28,14 @@ const alertOverlay = document.getElementById('custom-alert-overlay');
 const alertMessage = document.getElementById('alert-message');
 const alertButton = document.getElementById('alert-ok-button');
 
-// 🌐 متغيرات UI/Modes 
+// 🌐 متغيرات UI/Modes الجديدة
 const gameContainer = document.getElementById('game-container'); 
 const endChainJumpButton = document.getElementById('end-chain-jump'); 
+const modeSelectionScreen = document.getElementById('mode-selection-screen'); // شاشة اختيار الوضع
+const localModeButton = document.getElementById('local-mode-button');
+const aiModeButton = document.getElementById('ai-mode-button');
 
-// 🕹️ متغيرات حالة اللعب الجديدة
+// 🕹️ متغيرات حالة اللعب
 const GAME_MODE = { LOCAL: 'LOCAL', AI: 'AI', ONLINE: 'ONLINE' }; 
 const BOARD_SIZE = 5; 
 const CENTER_R = 2; 
@@ -42,13 +45,13 @@ const PLAYER2_PIECE = 2;
 const AI_PLAYER = PLAYER2_PIECE; // الكمبيوتر هو اللاعب 2 دائمًا
 const GAME_STATE_KEY = 'nutElKalbGameState'; 
 
-let gameMode = GAME_MODE.AI;      // الإعداد الافتراضي: اللعب ضد الكمبيوتر
+let gameMode = GAME_MODE.LOCAL;      // الإعداد الافتراضي عند بدء لعبة جديدة
 let aiDifficulty = 'medium';  
 let onlinePlayerNumber = null; 
 
 let canChainJump = false; 
 let chainJumpTimer = null; 
-const CHAIN_JUMP_TIME = 2000; // 2 ثانية
+const CHAIN_JUMP_TIME = 2000; 
 
 let board = []; 
 let currentPlayer = 0; 
@@ -61,32 +64,18 @@ let gameOver = false;
 // ------------------------------------
 
 function showScreen(screenId) {
-    if (screenId === 'game-container') {
+    modeSelectionScreen.classList.add('hidden');
+    gameContainer.classList.add('hidden');
+    
+    if (screenId === 'mode-selection-screen') {
+        modeSelectionScreen.classList.remove('hidden');
+        localStorage.removeItem(GAME_STATE_KEY); // مسح الحالة عند العودة للشاشة الرئيسية
+    } else if (screenId === 'game-container') {
         gameContainer.classList.remove('hidden');
     }
 }
 
-// ------------------------------------
-// 🎨 دوال التخصيص
-// ------------------------------------
-function applyCustomization() {
-    const savedTheme = localStorage.getItem('customTheme');
-    if (savedTheme) {
-        const { p1Color, p2Color, boardTheme } = JSON.parse(savedTheme);
 
-        const root = document.documentElement;
-        
-        document.body.classList.remove('theme-wood', 'theme-marble', 'theme-dark');
-        document.body.classList.add(`theme-${boardTheme}`);
-
-        root.style.setProperty('--player1-color', p1Color);
-        root.style.setProperty('--player2-color', p2Color);
-    }
-}
-
-function loadCustomization() {
-    applyCustomization();
-}
 // ------------------------------------
 // 💾 دوال حفظ/تحميل الحالة
 // ------------------------------------
@@ -127,30 +116,22 @@ function loadGameState() {
 }
 
 // ------------------------------------
-// 🏁 دالة بدء اللعبة
+// 🏁 دالة بدء اللعبة (معدلة لقبول الوضع)
 // ------------------------------------
-function startGame(mode = GAME_MODE.AI, param = 'medium') { 
+function startGame(mode = GAME_MODE.LOCAL, difficulty = 'medium') { 
     gameMode = mode;
-    aiDifficulty = param; 
+    aiDifficulty = difficulty; 
     onlinePlayerNumber = null;
 
-    showScreen('game-container');
-    initializeBoard(mode); 
-
-    if (gameMode === GAME_MODE.AI && currentPlayer === AI_PLAYER && typeof triggerAIMove === 'function') {
-        triggerAIMove();
-    }
-}
-
-// 1. تهيئة اللوحة
-function initializeBoard(mode) {
     if (loadGameState()) {
+        showScreen('game-container');
         if (gameMode === GAME_MODE.AI && currentPlayer === AI_PLAYER && typeof triggerAIMove === 'function') {
             triggerAIMove();
         }
         return; 
     }
     
+    // تهيئة اللوحة (نفس منطق التهيئة)
     board = Array(BOARD_SIZE).fill(0).map(() => Array(BOARD_SIZE).fill(0)); 
     
     let redPieces = [
@@ -158,7 +139,6 @@ function initializeBoard(mode) {
         [1,0], [1,1], [1,2], [1,3], [1,4], 
         [2,0], [2,1] 
     ];
-    // اللاعب 2 (الأحمر) هو الكمبيوتر
     redPieces.forEach(pos => {
         board[pos[0]][pos[1]] = PLAYER2_PIECE; 
     });
@@ -168,7 +148,6 @@ function initializeBoard(mode) {
         [3,0], [3,1], [3,2], [3,3], [3,4], 
         [2,3], [2,4] 
     ];
-    // اللاعب 1 (الأسود) هو البشري
     blackPieces.forEach(pos => {
         board[pos[0]][pos[1]] = PLAYER1_PIECE;
     });
@@ -182,14 +161,13 @@ function initializeBoard(mode) {
     if (chainJumpTimer) clearTimeout(chainJumpTimer);
     chainJumpTimer = null;
 
-    // نبدأ عشوائياً بين اللاعبين
     currentPlayer = Math.random() < 0.5 ? PLAYER1_PIECE : PLAYER2_PIECE; 
     
     saveGameState();
     renderBoard();
     updateStatus();
+    showScreen('game-container'); // عرض اللوحة بعد التهيئة
     
-    // تشغيل حركة الكمبيوتر إذا كان دوره
     if (gameMode === GAME_MODE.AI && currentPlayer === AI_PLAYER && typeof triggerAIMove === 'function') {
         triggerAIMove();
     }
@@ -201,27 +179,30 @@ function updateStatus() {
         const winner = currentPlayer === PLAYER1_PIECE ? 'الأسود' : 'الأحمر'; 
         statusElement.textContent = `انتهت اللعبة! اللاعب ${winner} هو الفائز! 🏆`;
         statusElement.style.color = 'var(--board-color)';
+        endChainJumpButton.classList.add('hidden');
         return;
     }
     
-    // تغيير لون النص ليتطابق مع لون اللاعب (لتوضيح من صاحب الدور)
     statusElement.style.color = currentPlayer === PLAYER1_PIECE ? 'var(--player1-color)' : 'var(--player2-color)';
     
     let statusText = '';
+    let playerLabel = (gameMode === GAME_MODE.AI && currentPlayer === AI_PLAYER) ? "الكمبيوتر" : "دورك";
     
-    if (gameMode === GAME_MODE.AI && currentPlayer === AI_PLAYER) {
-        statusText = "دور الكمبيوتر...";
-    } else {
-        statusText = "دورك الآن."; 
+    if (gameMode === GAME_MODE.LOCAL) {
+        playerLabel = currentPlayer === PLAYER1_PIECE ? "اللاعب 1 (أسود)" : "اللاعب 2 (أحمر)";
     }
+    
+    statusText = `${playerLabel} الآن.`; 
 
     if (isSacrificePhase) {
         statusText += " (التضحية)";
     } else if (canChainJump) {
         statusText += " (نط متتالي)";
-        // إظهار زر إنهاء النط المتتالي للاعب البشري فقط
-        if (gameMode !== GAME_MODE.AI || currentPlayer !== AI_PLAYER) { 
+        // إظهار زر إنهاء النط المتتالي للاعب البشري واللاعب المحلي
+        if (gameMode === GAME_MODE.LOCAL || (gameMode === GAME_MODE.AI && currentPlayer !== AI_PLAYER)) { 
             endChainJumpButton.classList.remove('hidden');
+        } else {
+            endChainJumpButton.classList.add('hidden');
         }
     } else {
         endChainJumpButton.classList.add('hidden');
@@ -262,7 +243,7 @@ function renderBoard() {
 }
 
 // ------------------------------------
-// 🛠️ دوال قواعد الحركة (تم ربطها بـ window لتمكين الوصول من AI.js)
+// 🛠️ دوال قواعد الحركة (مكررة هنا لتمكين الوصول من AI.js)
 // ------------------------------------
 window.canMove = function(r, c) { 
     const pieceType = board[r][c];
@@ -272,7 +253,7 @@ window.canMove = function(r, c) {
         const newR = r + dr;
         const newC = c + dc;
         if (newR >= 0 && newR < BOARD_SIZE && newC >= 0 && newC < BOARD_SIZE && board[newR][newC] === 0) {
-            if (isSacrificePhase && (newR !== CENTER_R || newC !== CENTER_C)) continue;
+            if (isSacrificePhase && (newR !== 2 || newC !== 2)) continue; // 2, 2 هو المركز
             return true;
         }
     }
@@ -325,11 +306,10 @@ window.canPlayerMove = function(player) {
 }
 
 // ------------------------------------
-// ✋ معالج النقر 
+// ✋ معالج النقر ومنطق الحركة (بدون تغيير كبير)
 // ------------------------------------
 function handleCellClick(event) {
     if (gameOver) return;
-
     if (gameMode === GAME_MODE.AI && currentPlayer === AI_PLAYER) return;
 
     const target = event.currentTarget;
@@ -470,7 +450,7 @@ function tryMove(newR, newC) {
 
 
 // ------------------------------------
-// 🛑 إنهاء الدور (مُربوطة بـ window لتمكين الوصول من AI.js)
+// 🛑 إنهاء الدور 
 // ------------------------------------
 window.finishTurn = function(skipPlayerChange = false) { 
     checkWinCondition();
@@ -554,11 +534,21 @@ function showSudaneseRules() {
 }
 
 // ------------------------------------
-// 🚀 بدء التطبيق وربط الأزرار
+// 🚀 بدء التطبيق وربط الأزرار (معدّل)
 // ------------------------------------
+
+// ربط أزرار اختيار الوضع
+localModeButton.addEventListener('click', () => {
+    startGame(GAME_MODE.LOCAL);
+});
+
+aiModeButton.addEventListener('click', () => {
+    startGame(GAME_MODE.AI, 'medium'); // يمكنك تعديل الصعوبة هنا
+});
+
+// زر إعادة التعيين يعود لشاشة اختيار الوضع
 resetButton.addEventListener('click', () => {
-    localStorage.removeItem(GAME_STATE_KEY);
-    startGame(GAME_MODE.AI, 'medium'); 
+    showScreen('mode-selection-screen'); 
 });
 
 rulesButton.addEventListener('click', showSudaneseRules);
@@ -575,13 +565,11 @@ endChainJumpButton.addEventListener('click', () => {
 });
 
 
-loadCustomization();
-
-// بدء اللعبة في وضع الكمبيوتر افتراضياً عند التحميل
+// بدء التطبيق: إما تحميل الحالة المحفوظة أو عرض شاشة اختيار الوضع
 if (loadGameState()) {
     showScreen('game-container'); 
     updateStatus();
     renderBoard();
 } else {
-    startGame(GAME_MODE.AI, 'medium');
+    showScreen('mode-selection-screen'); // يبدأ بشاشة اختيار الوضع
 }
