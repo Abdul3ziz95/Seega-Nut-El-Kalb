@@ -19,7 +19,7 @@ function evaluateBoard(board, player) {
     let playerCount = 0;
     let opponentCount = 0;
     
-    // قيمة كل قطعة (يمكن تعديلها لزيادة أو تقليل العدوانية)
+    // قيمة كل قطعة
     const PIECE_VALUE = 1000;
     const MOBILITY_VALUE = 5; // قيمة لعدد الحركات المتاحة
 
@@ -27,13 +27,11 @@ function evaluateBoard(board, player) {
         for (let c = 0; c < BOARD_SIZE; c++) {
             if (board[r][c] === player) {
                 playerCount++;
-                // مكافأة الحركات الممكنة للـ AI
                 if (window.getValidMoves(board, r, c, player).length > 0) { 
                     score += MOBILITY_VALUE;
                 }
             } else if (board[r][c] === opponent) {
                 opponentCount++;
-                // عقاب الحركات الممكنة للخصم
                 if (window.getValidMoves(board, r, c, opponent).length > 0) {
                      score -= MOBILITY_VALUE;
                 }
@@ -47,7 +45,7 @@ function evaluateBoard(board, player) {
 }
 
 // ------------------------------------
-// 🧭 دوال مساعدة لحساب الحركة (مكررة من game.js لتمكين عمل AI.js بشكل مستقل)
+// 🧭 دوال مساعدة لحساب الحركة
 // ------------------------------------
 
 // دالة تسترجع قائمة بحركات النط الممكنة من قطعة محددة
