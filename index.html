@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -12,14 +11,25 @@
 <body>
     
     <main>
-        <p id="game-status">الرجاء البدء باللعب...</p> 
+        
+        <div id="mode-selection-screen" style="text-align: center; padding: 20px;">
+            <h2 style="color: var(--board-color);">اختر وضع اللعب</h2>
+            <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
+                <button id="local-mode-button" class="action-button">لاعب ضد لاعب (محلي)</button>
+                <button id="ai-mode-button" class="action-button" style="background-color: var(--select-green);">اللعب ضد الكمبيوتر</button>
+                <button class="action-button" disabled style="background-color: #9E9E9E; cursor: default;">اللعب عبر الإنترنت (غير متوفر)</button>
+            </div>
+        </div>
 
-        <div id="game-container">
+
+        <div id="game-container" class="hidden">
+            <p id="game-status">الرجاء البدء باللعب...</p> 
+            
             <div id="board" class="board-grid">
             </div>
     
             <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 10px;">
-                <button id="reset-button" class="action-button">إعادة تعيين</button>
+                <button id="reset-button" class="action-button">قائمة الأوضاع / إعادة التعيين</button> 
                 <button id="rules-button" class="action-button" style="background-color: var(--select-green);">قواعد اللعب</button>
                 <button id="end-chain-jump" class="action-button hidden" style="background-color: #FF5722;">إنهاء النط المتتالي</button>
             </div>
@@ -38,3 +48,4 @@
     <script src="ai.js"></script> 
 </body>
 </html>
+
