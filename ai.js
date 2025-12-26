@@ -1,267 +1,321 @@
+
 // ===================================
-// منطق اللعب ضد الكمبيوتر (AI)
+// منطق الذكاء الاصطناعي (AI) - Minimax Algorithm
 // ===================================
 
-const AI_PLAYER = 2; 
-const OPPONENT_PLAYER = 1; 
+// يجب أن تكون هذه المتغيرات متطابقة مع game.js
+const AI_PLAYER = 2; // الكمبيوتر هو اللاعب 2 دائمًا
+const BOARD_SIZE = 5;
+const PLAYER1_PIECE = 1;
+const PLAYER2_PIECE = 2;
 
 // ------------------------------------
-// 🤖 دالة بدء حركة الكمبيوتر (تُستدعى من game.js)
+// 🧠 دالة تقييم الحالة (Heuristic Evaluation)
 // ------------------------------------
-
-async function triggerAIMove() {
-    // حماية ضد استدعاء الحركة في غير دور الكمبيوتر
-    if (currentPlayer !== AI_PLAYER) return; 
-    
-    // تأخير صغير لمحاكاة تفكير الكمبيوتر
-    await new Promise(resolve => setTimeout(resolve, 800)); 
-    
-    let currentMove = null;
-    let currentBoard = board.map(row => [...row]); 
-    const allLegalMoves = getAllLegalMoves(currentBoard, AI_PLAYER, isSacrificePhase);
-
-    if (allLegalMoves.length === 0) {
-        finishTurn(false); // الكمبيوتر لا يستطيع الحركة
-        return;
-    }
-
-    // 1. اختيار الحركة بناءً على الصعوبة
-    if (isSacrificePhase) {
-        currentMove = allLegalMoves[0]; 
-    } else {
-        switch (aiDifficulty) {
-            case 'EASY':
-                currentMove = selectEasyMove(allLegalMoves);
-                break;
-            case 'MEDIUM':
-                currentMove = selectMediumMove(allLegalMoves);
-                break;
-            case 'HARD':
-                currentMove = selectHardMove(currentBoard, allLegalMoves);
-                break;
-            default:
-                currentMove = selectEasyMove(allLegalMoves);
-        }
-    }
-
-    if (currentMove) {
-        // 2. تطبيق الحركة (بشكل مباشر على اللوحة)
-        board[currentMove.r2][currentMove.c2] = AI_PLAYER;
-        board[currentMove.r1][currentMove.c1] = 0;
-        
-        if (currentMove.isSacrifice) {
-            isSacrificePhase = false;
-        }
-
-        if (currentMove.isJump) {
-            board[currentMove.capturedR][currentMove.capturedC] = 0;
-            
-            // 3. معالجة النط المتتالي (AI يقوم به تلقائياً)
-            let pieceR = currentMove.r2;
-            let pieceC = currentMove.c2;
-            
-            while (canJumpAgain(pieceR, pieceC)) {
-                await new Promise(resolve => setTimeout(resolve, 500)); 
-                
-                const chainMoves = getAllLegalMoves(board, AI_PLAYER, false).filter(m => m.r1 === pieceR && m.isJump);
-                
-                // اختيار أفضل نط متتالي بناءً على الصعوبة
-                const nextJump = selectHardMove(board, chainMoves) || chainMoves[0]; 
-                
-                if (nextJump) {
-                    board[nextJump.r2][nextJump.c2] = AI_PLAYER;
-                    board[nextJump.r1][nextJump.c1] = 0;
-                    board[nextJump.capturedR][nextJump.capturedC] = 0;
-                    
-                    pieceR = nextJump.r2;
-                    pieceC = nextJump.c2;
-                    
-                    renderBoard();
-                } else {
-                    break;
-                }
-            }
-        }
-        
-        finishTurn(false); // إنهاء الدور وتمريره للاعب الآخر
-    }
-}
-
-// ------------------------------------
-// 🟢 سهل: حركة عشوائية صحيحة
-// ------------------------------------
-function selectEasyMove(legalMoves) {
-    const randomIndex = Math.floor(Math.random() * legalMoves.length);
-    return legalMoves[randomIndex];
-}
-
-// ------------------------------------
-// 🟡 متوسط: يفضل الأكل
-// ------------------------------------
-function selectMediumMove(legalMoves) {
-    const jumpMoves = legalMoves.filter(move => move.isJump);
-    
-    if (jumpMoves.length > 0) {
-        const randomIndex = Math.floor(Math.random() * jumpMoves.length);
-        return jumpMoves[randomIndex];
-    }
-    
-    return selectEasyMove(legalMoves);
-}
-
-// ------------------------------------
-// 🔴 صعب: استخدام خوارزمية Minimax بسيطة
-// ------------------------------------
-function selectHardMove(currentBoard, legalMoves) {
-    let bestMove = null;
-    let bestScore = -Infinity;
-    const DEPTH = 2; // عمق البحث: 2 حركة
-
-    for (const move of legalMoves) {
-        const newBoard = simulateMove(currentBoard, move);
-        
-        // تطبيق Minimax
-        const score = minimax(newBoard, DEPTH - 1, false, AI_PLAYER, -Infinity, Infinity); 
-            
-        if (score > bestScore) {
-            bestScore = score;
-            bestMove = move;
-        }
-    }
-    return bestMove || selectMediumMove(legalMoves);
-}
-
-// ------------------------------------
-// ⚙️ دوال مساعدة لـ AI (Minimax)
-// ------------------------------------
-
-// دالة تقييم اللوحة (كلما زاد الرقم، كان أفضل لـ AI)
 function evaluateBoard(board, player) {
     let score = 0;
-    let ownPieces = 0;
-    let oppPieces = 0;
-    const opponent = player === PLAYER1_PIECE ? PLAYER2_PIECE : PLAYER1_PIECE;
+    let opponent = player === PLAYER1_PIECE ? PLAYER2_PIECE : PLAYER1_PIECE;
+
+    let playerCount = 0;
+    let opponentCount = 0;
+    
+    // قيمة كل قطعة (يمكن تعديلها لزيادة أو تقليل العدوانية)
+    const PIECE_VALUE = 1000;
+    const MOBILITY_VALUE = 5; // قيمة لعدد الحركات المتاحة
 
     for (let r = 0; r < BOARD_SIZE; r++) {
         for (let c = 0; c < BOARD_SIZE; c++) {
             if (board[r][c] === player) {
-                ownPieces++;
+                playerCount++;
+                // مكافأة الحركات الممكنة للـ AI
+                if (getValidMoves(board, r, c, player).length > 0) {
+                    score += MOBILITY_VALUE;
+                }
             } else if (board[r][c] === opponent) {
-                oppPieces++;
+                opponentCount++;
+                // عقاب الحركات الممكنة للخصم
+                if (getValidMoves(board, r, c, opponent).length > 0) {
+                     score -= MOBILITY_VALUE;
+                }
+            }
+        }
+    }
+
+    score += (playerCount - opponentCount) * PIECE_VALUE;
+    
+    return score;
+}
+
+// ------------------------------------
+// 🧭 دوال مساعدة لحساب الحركة
+// ------------------------------------
+
+// دالة تسترجع قائمة بحركات النط الممكنة من قطعة محددة
+function getJumpMoves(board, r, c, player) {
+    const moves = [];
+    const opponent = player === PLAYER1_PIECE ? PLAYER2_PIECE : PLAYER1_PIECE;
+    const doubleSteps = [
+        [2, 0], [-2, 0], [0, 2], [0, -2], 
+        [2, 2], [2, -2], [-2, 2], [-2, -2] 
+    ];
+
+    for (const [dr, dc] of doubleSteps) {
+        const newR = r + dr;
+        const newC = c + dc;
+        if (newR >= 0 && newR < BOARD_SIZE && newC >= 0 && newC < BOARD_SIZE && board[newR][newC] === 0) {
+            
+            const jumpedR = r + Math.floor(dr / 2);
+            const jumpedC = c + Math.floor(dc / 2);
+            
+            if (board[jumpedR][jumpedC] === opponent) {
+                moves.push({ r1: r, c1: c, r2: newR, c2: newC, capturedR: jumpedR, capturedC: jumpedC, isJump: true, isSacrifice: false });
+            }
+        }
+    }
+    return moves;
+}
+
+
+// دالة تسترجع جميع الحركات الممكنة لقطعة محددة
+function getValidMoves(board, r, c, player) {
+    const moves = [];
+    const opponent = player === PLAYER1_PIECE ? PLAYER2_PIECE : PLAYER1_PIECE;
+    
+    // 1. فحص الحركات بخطوة واحدة (أفقي/عمودي فقط)
+    const singleSteps = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+    for (const [dr, dc] of singleSteps) {
+        const newR = r + dr;
+        const newC = c + dc;
+        if (newR >= 0 && newR < BOARD_SIZE && newC >= 0 && newC < BOARD_SIZE && board[newR][newC] === 0) {
+            // حركة تضحية (يجب أن تكون إلى المركز فقط)
+            if (window.isSacrificePhase && newR === 2 && newC === 2) { 
+                 moves.push({ r1: r, c1: c, r2: newR, c2: newC, isJump: false, isSacrifice: true });
+                 return moves; // التضحية هي الحركة الوحيدة المسموحة
+            }
+            // حركة عادية (ليست نط)
+            if (!window.isSacrificePhase) {
+                moves.push({ r1: r, c1: c, r2: newR, c2: newC, isJump: false, isSacrifice: false });
+            }
+        }
+    }
+
+    // 2. فحص حركات النط القاتل (خطوتين - جميع الاتجاهات)
+    if (!window.isSacrificePhase) {
+        const jumpMoves = getJumpMoves(board, r, c, player);
+        moves.push(...jumpMoves);
+    }
+    
+    return moves;
+}
+
+// دالة تسترجع جميع الحركات الممكنة للاعب الحالي
+function getAllPossibleMoves(board, player) {
+    let allMoves = [];
+    let hasJumpMoves = false;
+    
+    // إذا كانت مرحلة التضحية، ابحث عن قطعة يمكنها التضحية
+    if (window.isSacrificePhase) {
+        for (let r = 0; r < BOARD_SIZE; r++) {
+            for (let c = 0; c < BOARD_SIZE; c++) {
+                if (board[r][c] === player) {
+                     const moves = getValidMoves(board, r, c, player);
+                     if (moves.length > 0) return moves; // إذا وجدنا تضحية واحدة، نكتفي بها
+                }
             }
         }
     }
     
-    // تقييم بسيط: الفرق في عدد القطع
-    score += (ownPieces - oppPieces) * 100;
-    
-    // مكافأة التحكم في المركز
-    if (board[CENTER_R][CENTER_C] === player) {
-        score += 50;
+    // مرحلة اللعب العادية: ابحث عن كل الحركات، وابحث عن النط أولاً
+    for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+            if (board[r][c] === player) {
+                 const jumpMoves = getJumpMoves(board, r, c, player);
+                 if (jumpMoves.length > 0) {
+                     allMoves.push(...jumpMoves);
+                     hasJumpMoves = true;
+                 }
+            }
+        }
     }
-
-    return score;
+    
+    // إذا كان هناك أي نط، يجب على اللاعب تنفيذه.
+    if (hasJumpMoves) {
+        return allMoves;
+    }
+    
+    // إذا لم يكن هناك نط، ابحث عن الحركات العادية
+     for (let r = 0; r < BOARD_SIZE; r++) {
+        for (let c = 0; c < BOARD_SIZE; c++) {
+            if (board[r][c] === player) {
+                 const moves = getValidMoves(board, r, c, player);
+                 // أضف الحركات العادية فقط إذا لم تكن نط
+                 moves.filter(m => !m.isJump).forEach(m => allMoves.push(m));
+            }
+        }
+    }
+    
+    return allMoves;
 }
 
-// خوارزمية Minimax (مع Alpha-Beta Pruning)
+// ------------------------------------
+// ⚔️ خوارزمية Minimax
+// ------------------------------------
 function minimax(board, depth, isMaximizingPlayer, player, alpha, beta) {
-    if (depth === 0) {
-        return evaluateBoard(board, AI_PLAYER);
-    }
+    // 🛑 عمق البحث (يمكن تغييره لزيادة الصعوبة)
+    const MAX_DEPTH = 3; 
     
     const opponent = player === PLAYER1_PIECE ? PLAYER2_PIECE : PLAYER1_PIECE;
-    const moves = getAllLegalMoves(board, isMaximizingPlayer ? AI_PLAYER : opponent, false);
 
-    if (moves.length === 0) {
-        // نهاية اللعبة أو جمود
-        return evaluateBoard(board, AI_PLAYER);
+    if (depth === MAX_DEPTH || !canPlayerMove(player) || !canPlayerMove(opponent)) {
+        return evaluateBoard(board, player);
     }
-
+    
+    // اللاعب الحالي هو AI_PLAYER (تعظيم النتيجة)
     if (isMaximizingPlayer) {
         let maxEval = -Infinity;
-        for (const move of moves) {
-            const newBoard = simulateMove(board, move);
-            const evaluation = minimax(newBoard, depth - 1, false, player, alpha, beta);
-            maxEval = Math.max(maxEval, evaluation);
+        const possibleMoves = getAllPossibleMoves(board, player);
+        
+        for (const move of possibleMoves) {
+            const newBoard = applyMove(board, move, player);
+            const eval = minimax(newBoard, depth + 1, false, player, alpha, beta);
+            maxEval = Math.max(maxEval, eval);
             alpha = Math.max(alpha, maxEval);
-            if (beta <= alpha) break;
+            if (beta <= alpha) break; 
         }
         return maxEval;
-    } else {
-        let minEval = +Infinity;
-        for (const move of moves) {
-            const newBoard = simulateMove(board, move);
-            const evaluation = minimax(newBoard, depth - 1, true, player, alpha, beta);
-            minEval = Math.min(minEval, evaluation);
+        
+    // اللاعب الحالي هو الخصم (تقليل النتيجة)
+    } else { 
+        let minEval = Infinity;
+        const possibleMoves = getAllPossibleMoves(board, opponent);
+
+        for (const move of possibleMoves) {
+            const newBoard = applyMove(board, move, opponent);
+            const eval = minimax(newBoard, depth + 1, true, player, alpha, beta);
+            minEval = Math.min(minEval, eval);
             beta = Math.min(beta, minEval);
-            if (beta <= alpha) break;
+            if (beta <= alpha) break; 
         }
         return minEval;
     }
 }
 
-// دالة محاكاة الحركة
-function simulateMove(currentBoard, move) {
-    const newBoard = currentBoard.map(row => [...row]);
-    const piece = newBoard[move.r1][move.c1];
-    newBoard[move.r2][move.c2] = piece;
-    newBoard[move.r1][move.c1] = 0;
-    if (move.isJump) {
+// ------------------------------------
+// 🤖 دالة العثور على أفضل حركة للكمبيوتر
+// ------------------------------------
+function findBestMove(currentBoard, aiPlayer, aiDifficulty) {
+    // تعيين عمق البحث بناءً على الصعوبة
+    let depth;
+    switch (aiDifficulty) {
+        case 'easy':
+            depth = 1;
+            break;
+        case 'medium':
+            depth = 2; 
+            break;
+        case 'hard':
+            depth = 3; 
+            break;
+        default:
+            depth = 2;
+    }
+    
+    const possibleMoves = getAllPossibleMoves(currentBoard, aiPlayer);
+    let bestMove = null;
+    let bestValue = -Infinity;
+    
+    // التوزيع العشوائي للحركات في نفس التقييم (لمنع تكرار اللعب)
+    possibleMoves.sort(() => Math.random() - 0.5); 
+
+    for (const move of possibleMoves) {
+        const newBoard = applyMove(currentBoard, move, aiPlayer);
+        
+        // هنا نستخدم عمق البحث المحدد
+        const moveValue = minimax(newBoard, 0, false, aiPlayer, -Infinity, Infinity); 
+
+        if (moveValue > bestValue) {
+            bestValue = moveValue;
+            bestMove = move;
+        }
+    }
+    
+    // إذا كانت هناك حركات نط متتالي، يجب أن تتم معالجتها خارج هذه الدالة
+    // سنعيد أفضل حركة أولاً.
+    return bestMove;
+}
+
+// ------------------------------------
+// ⚙️ تطبيق الحركة على لوحة جديدة (لأغراض المحاكاة)
+// ------------------------------------
+function applyMove(currentBoard, move, player) {
+    // نسخ اللوحة لعدم تعديل اللوحة الأصلية
+    const newBoard = currentBoard.map(row => [...row]); 
+
+    // تطبيق الحركة
+    newBoard[move.r2][move.c2] = player;
+    newBoard[move.r1][move.c1] = 0; 
+    
+    if (move.isSacrifice) {
+        // لا يوجد أسر
+    } else if (move.isJump) {
+        // إزالة القطعة المأسورة
         newBoard[move.capturedR][move.capturedC] = 0;
     }
+
     return newBoard;
 }
 
-// دالة الحصول على جميع الحركات القانونية (مشتقة من canMove)
-function getAllLegalMoves(currentBoard, player, isSacrificePhase) {
-    const legalMoves = [];
-    const opponent = player === PLAYER1_PIECE ? PLAYER2_PIECE : PLAYER1_PIECE;
+// ------------------------------------
+// 📞 دالة استدعاء حركة الكمبيوتر
+// ------------------------------------
+function triggerAIMove() {
+    if (window.gameOver || window.currentPlayer !== AI_PLAYER) return;
 
-    for (let r = 0; r < BOARD_SIZE; r++) {
-        for (let c = 0; c < BOARD_SIZE; c++) {
-            if (currentBoard[r][c] === player) {
-                
-                // 🎯 مرحلة التضحية
-                if (isSacrificePhase) {
-                    if (r !== CENTER_R && c !== CENTER_C && board[CENTER_R][CENTER_C] === 0) {
-                        legalMoves.push({
-                            r1: r, c1: c, r2: CENTER_R, c2: CENTER_C, isSacrifice: true
-                        });
-                        // نكتفي بحركة واحدة في هذه المرحلة
-                        return legalMoves;
-                    }
-                }
+    // تعطيل واجهة المستخدم أثناء تفكير الكمبيوتر
+    window.statusElement.textContent = "الكمبيوتر يفكر..."; 
+    
+    // تحديد عمق البحث المناسب
+    let currentDepth = window.aiDifficulty === 'easy' ? 1 : (window.aiDifficulty === 'hard' ? 3 : 2);
+    
+    // استخدام مهلة لتمكين تحديث الواجهة والانتظار قليلاً (مهم)
+    setTimeout(() => {
+        let bestMove = findBestMove(window.board, AI_PLAYER, window.aiDifficulty);
 
-                // 🎯 مرحلة اللعب العادية
-                const singleSteps = [[0, 1], [0, -1], [1, 0], [-1, 0]];
-                for (const [dr, dc] of singleSteps) {
-                    const newR = r + dr;
-                    const newC = c + dc;
-                    if (newR >= 0 && newR < BOARD_SIZE && newC >= 0 && newC < BOARD_SIZE && currentBoard[newR][newC] === 0) {
-                        legalMoves.push({
-                            r1: r, c1: c, r2: newR, c2: newC, isJump: false
-                        });
-                    }
-                }
+        if (bestMove) {
+            // 1. تطبيق الحركة المختارة
+            window.board[bestMove.r2][bestMove.c2] = AI_PLAYER;
+            window.board[bestMove.r1][bestMove.c1] = 0;
+
+            if (bestMove.isSacrifice) {
+                window.isSacrificePhase = false;
+                window.finishTurn();
+                return;
+            }
+
+            if (bestMove.isJump) {
+                window.board[bestMove.capturedR][bestMove.capturedC] = 0;
                 
-                const doubleSteps = [[2, 0], [-2, 0], [0, 2], [0, -2], [2, 2], [2, -2], [-2, 2], [-2, -2]];
-                for (const [dr, dc] of doubleSteps) {
-                    const newR = r + dr;
-                    const newC = c + dc;
-                    if (newR >= 0 && newR < BOARD_SIZE && newC >= 0 && newC < BOARD_SIZE && currentBoard[newR][newC] === 0) {
-                        const jumpedR = r + Math.floor(dr / 2);
-                        const jumpedC = c + Math.floor(dc / 2);
-                        
-                        if (currentBoard[jumpedR][jumpedC] === opponent) {
-                            legalMoves.push({
-                                r1: r, c1: c, r2: newR, c2: newC, isJump: true,
-                                capturedR: jumpedR, capturedC: jumpedC
-                            });
-                        }
-                    }
+                // 2. التحقق من النط المتتالي
+                if (window.canJumpAgain(bestMove.r2, bestMove.c2)) {
+                    // إذا كان هناك نط متتالي، قم بتنفيذه
+                    window.selectedPiece = { r: bestMove.r2, c: bestMove.c2 };
+                    window.canChainJump = true; 
+                    window.renderBoard();
+                    window.updateStatus();
+                    // استدعاء الكمبيوتر مرة أخرى للحركة المتتالية
+                    // (تتم معالجة النط المتتالي تلقائيًا داخل triggerAIMove)
+                    setTimeout(triggerAIMove, 500); // مهلة أقصر للنط المتتالي
+                    return; 
                 }
             }
+            
+            // 3. إنهاء الدور إذا لم يكن نط متتالي
+            window.finishTurn();
+            
+        } else {
+             // إذا لم يجد الكمبيوتر حركة، فإن الدور ينتقل.
+             window.finishTurn(); 
         }
-    }
-    return legalMoves;
+    }, 1000); // انتظر ثانية واحدة قبل حركة الكمبيوتر (لتبدو واقعية)
 }
+
