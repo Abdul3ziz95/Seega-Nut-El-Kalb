@@ -117,6 +117,8 @@ main {
     border-radius: 5px;
     cursor: pointer;
     transition: background-color 0.2s;
+    width: 250px; /* عرض ثابت لتبدو أزرار الأوضاع متناسقة */
+    max-width: 90vw;
 }
 
 .action-button:hover {
