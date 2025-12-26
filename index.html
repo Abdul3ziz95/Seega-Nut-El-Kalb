@@ -4,96 +4,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نط الكلب - لعبة سودانية عصرية</title>
+    <title>اللعبة اللوحية</title> 
     
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="app-container">
-        <header>
-            <h1>لعبة نط الكلب السودانية</h1>
-            <p id="game-status">اختر طريقة اللعب من القائمة.</p>
-        </header>
+    
+    <main>
+        <p id="game-status">الرجاء البدء باللعب...</p> 
 
-        <main>
-            <div id="main-menu" class="menu-screen active">
-                <h2>اختر طريقة اللعب</h2>
-                <button class="action-button mode-button" onclick="showAISettings()">لعب ضد الكمبيوتر 🤖</button>
-                <button class="action-button mode-button" onclick="showMultiplayerSettings()">لعب عبر الإنترنت 🌐</button>
-                <button class="action-button mode-button" onclick="startGame('LOCAL')">لاعب ضد لاعب (محلي) 👥</button>
-                <button id="customize-button" class="action-button mode-button" onclick="showCustomizationPanel()">تخصيص المظهر 🎨</button>
-                <button id="rules-button" class="action-button mode-button rules-button-style">قواعد اللعب</button>
+        <div id="game-container">
+            <div id="board" class="board-grid">
             </div>
-
-            <div id="ai-settings" class="menu-screen hidden">
-                <h2>اختر مستوى الصعوبة</h2>
-                <div class="difficulty-options">
-                    <button class="action-button" onclick="startGame('AI', 'EASY')">🟢 سهل (عشوائي)</button>
-                    <button class="action-button" onclick="startGame('AI', 'MEDIUM')">🟡 متوسط (تفضيل الأكل)</button>
-                    <button class="action-button" onclick="startGame('AI', 'HARD')">🔴 صعب (تحليل معمق)</button>
-                </div>
-                <button class="action-button back-button" onclick="showMainMenu()">رجوع</button>
+    
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 10px;">
+                <button id="reset-button" class="action-button">إعادة تعيين</button>
+                <button id="rules-button" class="action-button" style="background-color: var(--select-green);">قواعد اللعب</button>
+                <button id="end-chain-jump" class="action-button hidden" style="background-color: #FF5722;">إنهاء النط المتتالي</button>
             </div>
-
-            <div id="multiplayer-settings" class="menu-screen hidden">
-                <h2>اللعب عبر الإنترنت (PeerJS)</h2>
-                <div id="peer-status">جارٍ الاتصال بالشبكة...</div>
-                
-                <div class="connection-group">
-                    <p>معرّفك الخاص (ID): <span id="my-id-display"></span></p>
-                </div>
-
-                <div class="connection-group">
-                    <p>معرّف الخصم:</p>
-                    <input type="text" id="opponent-id-input" placeholder="أدخل ID الخصم">
-                    <button class="action-button" onclick="connectToPeer(document.getElementById('opponent-id-input').value)">اتصال</button>
-                </div>
-                
-                <p id="connection-message" class="message-area"></p>
-                
-                <button class="action-button back-button" onclick="showMainMenu()">رجوع</button>
-            </div>
-
-            <div id="game-container" class="hidden">
-                <div id="board" class="board-grid">
-                </div>
-                <div class="game-controls">
-                    <button id="reset-button" class="action-button">إنهاء اللعبة والعودة</button>
-                    <button id="end-chain-jump" class="action-button hidden" onclick="finishTurn(true)">إنهاء الدور (نط متتالي)</button>
-                </div>
-            </div>
-            
-            <div id="customization-panel" class="menu-screen hidden">
-                <h2>تخصيص المظهر</h2>
-
-                <div class="custom-option">
-                    <label>لون القطعة (اللاعب 1 - أسود)</label>
-                    <input type="color" id="p1-color-picker" value="#212121" onchange="applyCustomization()">
-                </div>
-
-                <div class="custom-option">
-                    <label>لون القطعة (اللاعب 2 - أحمر)</label>
-                    <input type="color" id="p2-color-picker" value="#B71C1C" onchange="applyCustomization()">
-                </div>
-                
-                <div class="custom-option">
-                    <label>خلفية اللوحة</label>
-                    <select id="board-theme-select" onchange="applyCustomization()">
-                        <option value="wood">خشب أنيق (افتراضي)</option>
-                        <option value="marble">رخام فاتح</option>
-                        <option value="dark">وضع داكن</option>
-                    </select>
-                </div>
-
-                <button class="action-button back-button" onclick="showMainMenu()">حفظ والعودة</button>
-            </div>
-            
-
-        </main>
-    </div>
+        </div>
+        
+    </main>
     
     <div id="custom-alert-overlay" class="hidden">
         <div id="custom-alert-box">
@@ -103,7 +35,6 @@
     </div>
     
     <script src="game.js"></script>
-    <script src="ai.js"></script>
-    <script src="multiplayer.js"></script>
+    <script src="ai.js"></script> 
 </body>
 </html>
